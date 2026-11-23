@@ -52,5 +52,10 @@ jobs:
             gh release create $env:RELEASE_TAG --target $env:GITHUB_SHA --prerelease --title 'v1.2.0 · 单文件 EXE（实验版）' --notes-file docs/RELEASE_NOTES.md
             if ($LASTEXITCODE -ne 0) { throw 'Release creation failed' }
           }
-          gh release upload $env:RELEASE_TAG 'dist/hsr-relic-manager-v1.2.0-windows.zip' 'dist/星铁遗器整理助手.exe' 'dist/SHA256SUMS.txt' --clobber
+          gh release upload $env:RELEASE_TAG 'dist/hsr-relic-manager-v1.2.0-windows.zip' 'dist/hsr-relic-manager-v1.2.0.exe' 'dist/SHA256SUMS.txt' --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Asset upload failed' }
+          $assets = gh release view $env:RELEASE_TAG --json assets --jq '.assets[].name'
+          if ($assets -contains 'default.exe') {
+            gh release delete-asset $env:RELEASE_TAG 'default.exe' --yes
+            if ($LASTEXITCODE -ne 0) { throw 'Obsolete asset cleanup failed' }
+          }
