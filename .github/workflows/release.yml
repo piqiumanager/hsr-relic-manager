@@ -1,0 +1,56 @@
+name: Build and publish Windows EXE
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'desktop/**'
+      - 'source/**'
+      - '*.ps1'
+      - '*.cs'
+      - '*.html'
+      - 'licenses/**'
+      - '.github/workflows/release.yml'
+      - 'docs/RELEASE_NOTES.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-v1.2.0
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: v1.2.0
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Verify scoring and cleanup plans
+        shell: pwsh
+        run: |
+          node scripts/test-engine.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Scoring tests failed' }
+          node scripts/test-mark-plan.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Plan tests failed' }
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-marker-core.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Native matching tests failed' }
+      - name: Build single executable with verified official dependencies
+        shell: powershell
+        run: ./desktop/build.ps1
+      - name: Publish experimental release
+        shell: pwsh
+        run: |
+          gh release view $env:RELEASE_TAG 2>$null | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:RELEASE_TAG --target $env:GITHUB_SHA --prerelease --title 'v1.2.0 · 单文件 EXE（实验版）' --notes-file docs/RELEASE_NOTES.md
+            if ($LASTEXITCODE -ne 0) { throw 'Release creation failed' }
+          }
+          gh release upload $env:RELEASE_TAG 'dist/hsr-relic-manager-v1.2.0-windows.zip' 'dist/星铁遗器整理助手.exe' 'dist/SHA256SUMS.txt' --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Asset upload failed' }

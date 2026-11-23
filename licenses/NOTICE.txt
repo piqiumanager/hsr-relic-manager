@@ -1,0 +1,6 @@
+星铁遗器整理助手 v1.2，2026-11-23。
+本工具完整源码随包提供，整体使用 AGPL-3.0 许可。
+Fribbels 评分核心及角色资料：Copyright (c) 2024 Fribbels，MIT License。
+遗器单件名称表：由 Mar-7th/StarRailRes 的 index_min/cn/relics.json 提取（2026-11-23），AGPL-3.0。仅包含 ID、部位和游戏名称，未使用图片或运行时代码。
+修改：加入自动标记计划、中文 OCR 校准和双重核对执行器。
+游戏名称和游戏资料的权利归原权利人所有。

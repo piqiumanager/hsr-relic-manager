@@ -1,0 +1,24 @@
+require('node:process').chdir(require('node:path').resolve(__dirname,'..'));
+require('node:fs').mkdirSync('work',{recursive:true});
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const ctx={console,setTimeout,clearTimeout,structuredClone};vm.createContext(ctx);ctx.HSRData=JSON.parse(fs.readFileSync('source/data.json','utf8'));
+for(const p of ['source/fribbels-core.js','source/engine.js'])vm.runInContext(fs.readFileSync(p,'utf8'),ctx);
+const E=ctx.RelicEngine;
+const raw=()=>({_uid:'1',set_id:'117',slot:'Head',rarity:5,level:15,mainstat:'HP',substats:[{key:'DEF',value:126.9},{key:'DEF_',value:5.4},{key:'HP_',value:4.32},{key:'Effect RES_',value:4.32}],lock:false,location:'',discard:false});
+const wrap=rs=>{const x=E.parse({source:'ReliquaryArchiver',characters:[{id:'1308'}],relics:rs});x.captureId='synthetic-test-capture';return x};
+const cfg={...E.DEFAULTS,scope:'selected',selected:['1308']};let checks=0;
+(async()=>{
+let x=wrap([raw()]),r=await E.analyze(x,cfg),plan=E.buildMarkPlan(r,x);assert.equal(plan.total,1);assert.equal(plan.allowSalvage,false);assert.equal(plan.candidates[0].pieceName,'先驱的绝热围壳');checks+=3;
+fs.writeFileSync('work/marker-plan-fixture.json',JSON.stringify(plan));fs.writeFileSync('work/marker-snapshot-fixture.json',JSON.stringify(x.root));
+delete x.captureId;assert.throws(()=>E.buildMarkPlan(r,x),/新快照/);checks++;
+x=wrap([raw()]);x.isDemo=true;assert.throws(()=>E.buildMarkPlan(r,x),/示例/);checks++;
+x=wrap([{...raw(),discard:true}]);r=await E.analyze(x,cfg);assert.throws(()=>E.buildMarkPlan(r,x),/没有可自动/);checks++;
+x=wrap([{...raw(),lock:true}]);r=await E.analyze(x,{...cfg,protectLocked:false});assert.throws(()=>E.buildMarkPlan(r,x));checks++;
+x=wrap([{...raw(),location:'1308'}]);r=await E.analyze(x,{...cfg,protectEquipped:false});assert.throws(()=>E.buildMarkPlan(r,x));checks++;
+x=wrap([{...raw(),discard:undefined}]);r=await E.analyze(x,cfg);assert.throws(()=>E.buildMarkPlan(r,x));checks++;
+x=wrap([raw(),{...raw(),_uid:'2'}]);r=await E.analyze(x,cfg);r.rows[1].manual='keep';assert.throws(()=>E.buildMarkPlan(r,x));checks++;
+x=wrap([raw(),{...raw(),_uid:'2',rarity:4}]);r=await E.analyze(x,cfg);assert.throws(()=>E.buildMarkPlan(r,x));checks++;
+x=wrap([raw(),{...raw(),_uid:'2'}]);r=await E.analyze(x,cfg);plan=E.buildMarkPlan(r,x);assert.equal(plan.candidates.length,1);assert.equal(plan.total,2);checks+=2;
+assert.equal(E.markerFingerprint({...r.rows[0],substats:[{stat:'SPD',value:2.1}]}),E.markerFingerprint({...r.rows[0],substats:[{stat:'SPD',value:2.9}]}));checks++;
+console.log(JSON.stringify({markPlanChecks:checks,fixture:'source-verified cleanup plan'}));
+})().catch(e=>{console.error(e.stack);process.exit(1)});

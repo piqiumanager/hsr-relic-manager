@@ -1,0 +1,13 @@
+captures/
+marker-config/
+marker-runs/
+tools/
+work/
+dist/
+.env
+.env.*
+*.log
+*.tmp
+node_modules/
+.DS_Store
+Thumbs.db
