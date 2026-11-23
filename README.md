@@ -1,6 +1,8 @@
-# 星铁遗器整理助手
+# 绷铁遗器一键分解
 
-面向 Windows 本地中文客户端的遗器筛选工具。读取 Reliquary 背包数据，使用 Fribbels 属性评分，按五星角色的当前评分和强化潜力挑选遗器，并可在游戏内标记清理候选。
+《崩坏：星穹铁道》遗器清理小工具，支持 Windows 本地中文客户端。下载后双击 EXE，点击“一键整理”，即可开始读取背包、自动评分和标记弃置的引导流程。
+
+工具结合 Reliquary Archiver 的背包读取与 Fribbels 的属性评分，只按五星角色挑选遗器，未强化胚子与已强化遗器一起筛选。默认保留极高分和高潜力遗器，将中低分遗器列为清理候选，再逐件核对并自动标记弃置。最后的分解由你在游戏内检查并确认。
 
 **当前版本：v1.2.0 实验版。游戏内自动标记尚未完成实机端到端验证，首次请先校准并运行“仅识别预览”。工具不会执行分解。**
 
@@ -81,7 +83,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-marker-ocr.
 整体按 [AGPL-3.0](LICENSE) 提供，完整源码在本仓库中。第三方许可与修改记录保留在 [licenses](licenses) 中。
 
 - [Fribbels HSR Optimizer](https://github.com/fribbels/hsr-optimizer)：属性评分核心与角色权重，保留 MIT 许可。
-- [Reliquary Archiver](https://github.com/IceDynamix/reliquary-archiver)：完整背包导出；不捆绑程序，首次读取时从官方发布页下载。
+- [Reliquary Archiver](https://github.com/IceDynamix/reliquary-archiver)：完整背包导出；Windows EXE 已内置 v0.20.0 PktMon 版，保留 MIT 许可。
 - [StarRailRes](https://github.com/Mar-7th/StarRailRes)：遗器单件名称资料，保留 AGPL-3.0 许可。
 
 本项目与游戏官方无隶属关系，游戏名称和资料权利归原权利人所有。
