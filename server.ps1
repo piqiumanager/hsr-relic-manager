@@ -42,7 +42,7 @@ function Read-LocalRequest($stream) {
 }
 
 function Get-MarkerStatus {
-    $ready=$true;foreach($name in @('calibration.json','unmarked.png','unlocked.png','anchor.png','five-stars.png')){if(-not (Test-Path -LiteralPath (Join-Path (Join-Path $dataBase 'marker-config') $name))){$ready=$false}}
+    $ready=$true # Fixed 1920x1080 layout replaces manual calibration.
     if(-not $script:markerJob){return @{state='idle';calibrated=$ready;message='尚未启动游戏内标记。'}}
     $file=Join-Path $script:markerJob.directory 'status.json'
     if(Test-Path -LiteralPath $file){try{$state=ConvertFrom-Json ([IO.File]::ReadAllText($file,$utf8));if($state.state -in @('starting','calibrating','running')){try{if($script:markerJob.process.HasExited){$state.state='failed';$state.message='标记进程意外结束，请检查 marker-runs 记录后重试。'}}catch{}};$state|Add-Member -NotePropertyName calibrated -NotePropertyValue $ready -Force;return $state}catch{}}
@@ -58,6 +58,7 @@ function Assert-MarkerIdle {
 }
 
 function Start-MarkerWorker([string]$Mode,$Plan,[bool]$Preview) {
+    if($Mode -ne 'Run'){throw '本版本自动定位，不再需要手动校准。'}
     Assert-MarkerIdle
     $jobId=(Get-Date -Format 'yyyyMMdd-HHmmss')+'-'+[Guid]::NewGuid().ToString('N').Substring(0,8)
     $dir=Join-Path (Join-Path $dataBase 'marker-runs') $jobId
@@ -78,11 +79,23 @@ function Get-CanonicalMarkerStat([string]$Stat){
     return $Stat.TrimEnd('_')
 }
 
+function Get-CanonicalMarkerMainStat([string]$Stat,[string]$Slot){
+    $key=Get-CanonicalMarkerStat $Stat
+    if(($Slot -replace '\s','') -in @('Body','Feet','PlanarSphere','LinkRope') -and $key -in @('HP','ATK','DEF')){$key+='%'}
+    return $key
+}
+
+function Get-MarkerVisibleValue([string]$Stat,[double]$Value){
+    if($Stat -in @('HP','ATK','DEF','SPD')){return [Math]::Floor($Value+0.00001)}
+    return [Math]::Floor($Value*10+0.00001)/10
+}
+
 function Validate-MarkerPlan($Plan) {
     if(-not $script:capture -or $script:capture.state -ne 'complete' -or $Plan.captureId -ne $script:capture.id){throw '请先用“一键读取背包”重新读取本次账号，再开始自动标记。'}
     if(((Get-Date)-$script:capture.started).TotalMinutes -gt 30){throw '背包快照已超过 30 分钟，请重新读取后标记。'}
     if($Plan.schema -ne 'hsr-marker-plan-v1' -or $Plan.allowSalvage -ne $false -or @($Plan.candidates).Count -lt 1 -or @($Plan.candidates).Count -gt 3000){throw '标记清单无效。'}
     $snapshot=ConvertFrom-Json $script:capture.json
+    if($Plan.inventoryCount -ne @($snapshot.relics).Count -or $Plan.inventoryCount -gt 3000){throw '背包总数与本次快照不一致，请重新读取。'}
     $inventory=@{};foreach($r in $snapshot.relics){$id=[string]$r._uid;if($inventory.ContainsKey($id)){throw '原始背包含重复 ID，请重新读取。'};$inventory[$id]=$r}
     $data=ConvertFrom-Json ([IO.File]::ReadAllText((Join-Path $base 'source\data.json'),$utf8))
     $seen=@{};$seenIds=@{};$total=0
@@ -95,12 +108,13 @@ function Validate-MarkerPlan($Plan) {
             if($seenIds.ContainsKey([string]$id)){throw '候选 ID 重复，请重新筛选。'};$seenIds[[string]$id]=$true
             $r=$inventory[[string]$id]
             if(-not $r -or $r.rarity -ne 5 -or $r.lock -ne $false -or $r.discard -ne $false -or $r.location -cne '' -or $r.level -ne $c.enhance -or [string]$r.set_id -ne [string]$c.setId -or ($r.slot -replace '\s','') -ne $c.part){throw '候选与新背包不一致，或已锁定、装备、弃置，请重新读取。'}
-            if((Get-CanonicalMarkerStat $r.mainstat) -ne $c.main.stat){throw '主属性与新背包不一致。'}
-            if(@($r.substats).Count -ne @($c.substats).Count){throw '副属性数量与背包不一致。'}
-            foreach($sub in $c.substats){$raw=@($r.substats|Where-Object{(Get-CanonicalMarkerStat $_.key) -eq $sub.stat});if($raw.Count -ne 1 -or [Math]::Abs([double]$raw[0].value-[double]$sub.value) -gt 0.0001){throw '副属性与背包不一致。'}}
+            if((Get-CanonicalMarkerMainStat $r.mainstat $r.slot) -ne $c.main.stat){throw '主属性与新背包不一致。'}
+            # A visual group can contain 3 active + 1 preview or 4 active stats.
+            # The frontend only groups items when every member has the same low-score decision.
+            # Validate the complete visible fingerprint, including preview values.
             $allVisual=@($r.substats)+@($r.preview_substats|Where-Object{$null -ne $_})
             if(@($c.visualSubstats).Count -ne $allVisual.Count){throw '预览词条数量与背包不一致。'}
-            foreach($sub in $c.visualSubstats){$raw=@($allVisual|Where-Object{(Get-CanonicalMarkerStat $_.key) -eq $sub.stat});if($raw.Count -ne 1 -or [Math]::Abs([double]$raw[0].value-[double]$sub.value) -gt 0.0001){throw '预览词条与背包不一致。'}}
+            foreach($sub in $c.visualSubstats){$raw=@($allVisual|Where-Object{(Get-CanonicalMarkerStat $_.key) -eq $sub.stat});if($raw.Count -ne 1 -or [Math]::Abs((Get-MarkerVisibleValue $sub.stat $raw[0].value)-(Get-MarkerVisibleValue $sub.stat $sub.value)) -gt 0.0001){throw '预览词条与背包不一致。'}}
             $total++
         }
     }
@@ -206,6 +220,11 @@ try {
                     try { Send-Response $stream 200 (Json (Start-Capture)) } catch { Send-Response $stream 400 (Json @{error=$_.Exception.Message}) }
                 } elseif ($route -eq '/api/capture/status' -and $method -eq 'GET') {
                     Send-Response $stream 200 (Capture-Status)
+                } elseif ($route -eq '/api/capture/latest' -and $method -eq 'GET') {
+                    $dir=Join-Path $dataBase 'captures'
+                    $latest=if(Test-Path -LiteralPath $dir){Get-ChildItem -LiteralPath $dir -Filter '*.json' -File|Sort-Object LastWriteTime -Descending|Select-Object -First 1}else{$null}
+                    if($latest -and $latest.Length -le 47185920){$saved=[IO.File]::ReadAllText($latest.FullName,$utf8);Send-Response $stream 200 ('{"state":"saved","data":'+$saved+'}')}
+                    else{Send-Response $stream 200 (Json @{state='empty'})}
                 } elseif ($route -eq '/api/marker/status' -and $method -eq 'GET') {
                     Send-Response $stream 200 (Json (Get-MarkerStatus))
                 } elseif ($route -eq '/api/marker/calibrate' -and $method -eq 'POST') {
@@ -216,7 +235,7 @@ try {
                     if($script:markerJob){[IO.File]::WriteAllText((Join-Path $script:markerJob.directory 'stop'),'stop',$utf8)}
                     Send-Response $stream 200 (Json @{state='stopping';message='已请求停止，脚本会在下一次输入前停下。'})
                 } elseif ($route -eq '/api/health' -and $method -eq 'GET') {
-                    Send-Response $stream 200 (Json @{state='ok';version='1.2';capture='Reliquary v0.20.0';scoring='Fribbels';marker='Chinese Windows OCR'})
+                    Send-Response $stream 200 (Json @{state='ok';version='1.3';capture='Reliquary v0.20.0';scoring='Fribbels';marker='Chinese Windows OCR'})
                 } elseif ($route -eq '/api/exit' -and $method -eq 'POST') {
                     Send-Response $stream 200 (Json @{state='closing'})
                     if($script:markerJob){[IO.File]::WriteAllText((Join-Path $script:markerJob.directory 'stop'),'stop',$utf8)}

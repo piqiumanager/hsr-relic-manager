@@ -1,101 +1,63 @@
 # 绷铁遗器一键分解
 
-《崩坏：星穹铁道》遗器清理小工具，支持 Windows 本地中文客户端。下载后双击 EXE，点击“一键整理”，即可开始读取背包、自动评分和标记弃置的引导流程。
+Windows 本地中文客户端的遗器清理工具。用 Reliquary 读取背包，按 Fribbels 角色权重计算分数，只评估五星角色，只保留极高分和高潜力遗器。低分遗器可自动标记弃置，分解由玩家在游戏内确认。
 
-工具结合 Reliquary Archiver 的背包读取与 Fribbels 的属性评分，只按五星角色挑选遗器，未强化胚子与已强化遗器一起筛选。默认保留极高分和高潜力遗器，将中低分遗器列为清理候选，再逐件核对并自动标记弃置。最后的分解由你在游戏内检查并确认。
+## 下载 v1.3.0 测试版
 
-**当前版本：v1.2.0 实验版。游戏内自动标记尚未完成实机端到端验证，首次请先校准并运行“仅识别预览”。工具不会执行分解。**
+**[下载 Windows ZIP](https://github.com/piqiumanager/hsr-relic-manager/releases/download/v1.3.0/hsr-relic-manager-v1.3.0-windows.zip)** · [版本发布页](https://github.com/piqiumanager/hsr-relic-manager/releases/tag/v1.3.0)
 
-## 下载
+ZIP 仅包含 EXE 和中文说明。内置读取与评分组件，不需要 Python、Node 或另下 Reliquary。界面使用微软 WebView2 Runtime。
 
-- **[直接下载 Windows 工具包](https://github.com/piqiumanager/hsr-relic-manager/releases/download/v1.2.0/hsr-relic-manager-v1.2.0-windows.zip)**
-- [查看版本发布页](https://github.com/piqiumanager/hsr-relic-manager/releases)
-- [下载校验值](https://github.com/piqiumanager/hsr-relic-manager/releases/download/v1.2.0/SHA256SUMS.txt)
+## 这版改了什么
 
-下载 ZIP，解压后只有 **`星铁遗器整理助手.exe`** 和 **`使用说明.txt`**，双击 EXE 打开桌面窗口。内置读取组件，无需 Python、Node.js 或另下 Reliquary；界面使用系统 WebView2 Runtime，缺少时提供微软安装入口。
+- 修复百分比主属性被误读为固定值的问题。现在根据遗器部位正确识别 HP/ATK/DEF 主属性；锁定、装备的遗器也照常评分。
+- 分开显示“已评分”“有评分但受保护”“数据异常无评分”，明细不再混淆保护状态与评分缺失。
+- 取消 14 步点选校准，改用固定 1920×1080 客户区布局、界面检查和键盘遍历。
+- 首页收为读取背包、开始标记和停止，完整评分表及门槛设置放入单独窗口。
 
-![示例背包界面](docs/preview.png)
+**评分导入已通过本机实际背包回归。新版游戏内自动定位仍需实机预览验证，发布为测试版，遇到画面或识别不确定会停止或跳过。**
 
-## 快速使用
+## 使用
 
-1. 把游戏停在登录界面，在工具里点击“一键整理”。内置官方 Reliquary v0.20.0 PktMon 组件并校验文件。接受管理员授权后，再点击进入游戏。
-2. 读取完成后自动筛选。也可以直接拖入 Reliquary、HSR Scanner 或 Fribbels 导出的完整背包 JSON。
-3. 选择“全部五星”“仅已拥有五星”或手动勾选五星角色，按需要调整评分门槛。
-4. 如需自动标记，在游戏打开“背包 → 遗器”，选择五星，清除锁定/弃置状态筛选，并展开右侧详情。
-5. 首次按提示校准位置，再把遗器列表滚动到顶部。先从“自动标记弃置”运行“仅识别预览”，核对后在“一键整理”里点“继续标记”。以后同一分辨率可复用校准。
-6. 运行时保持游戏在前台，不要操作鼠标。按 **F8** 或工具中的“停止”结束任务。校准时也可按 Esc 取消。
-7. 完成后在游戏中查看“已弃置”，检查后自行分解。
+1. 游戏设为 **1920×1080、中文界面、PC 键鼠模式**，停留在登录界面。
+2. 打开 EXE，点“读取背包”，授权后进入游戏，等待读取和评分完成。
+3. 首次可勾选“仅识别预览”。点“开始标记”后，工具会尝试用 B 打开背包并切换到遗器，不需要画框。
+4. 运行时不操作鼠标键盘，按 **F8** 或“停止”终止。自定义背包快捷键的玩家请先手动打开遗器背包。
+5. 结束后在游戏内检查弃置列表，自行确认分解。未识别、锁定、已装备或已弃置的遗器保持不动。
 
-详细步骤见 [使用说明](使用说明.txt)。
+默认满级当前分 ≥75；胚子平均潜力 ≥70 且上限 ≥85。任意目标五星达标即可保留。评分是遗器属性潜力百分比，仍需结合整队配装和速度调整。
 
-## 默认筛选
+启动会重算本机上次背包的评分；自动标记仍需本次新读取快照。背包数据在本机处理，不上传账号数据。详见[使用说明](使用说明.txt)。
 
-只评估五星角色，五星遗器中的未强化胚子与已强化遗器一起筛选。
-
-| 遗器状态 | 保留条件 |
-| --- | --- |
-| 已满级 | 任一目标五星角色的当前属性分 ≥75 |
-| 未满级 | 同一目标五星角色的平均满级潜力 ≥70，且理论上限 ≥85 |
-
-不按部位凑保留数量，不额外保留中低分速度鞋或充能绳。可以修改门槛和单个角色的属性权重。
-
-分数是 0–100 的遗器属性潜力百分比，**不是整队伤害评分**。套装效果、速度调轴和队伍搭配仍需结合配装检查。理论上限不代表实际强化结果。
-
-## 自动标记的范围
-
-- 仅使用最近 30 分钟通过本工具“一键读取”得到的背包快照。
-- 逐件核对遗器名称、套装、等级、主属性和副属性；点击前再次读取，点击后检查红色弃置状态。
-- 跳过已锁定、已装备、已弃置、数据不完整或存在视觉歧义的遗器。
-- 游戏失去焦点、尺寸改变、页面变化或标记无法确认时停止。
-- **不解锁，不取消已有弃置，不强化，不分解，不点击最终确认。**
-
-首次需要根据截图完成位置校准。分辨率或布局变化后重新校准。云游戏与英文界面暂不支持此标记模块。
-
-## 本机数据
-
-EXE 自动释放文件到 `%LOCALAPPDATA%\HSRRelicManager\app`，背包、校准和日志在同目录 `data` 中，浏览器配置在 `webview` 中。关闭桌面窗口会请求停止标记。
-
-背包与截图在本机处理。运行中生成的 `captures/`、`marker-config/`、`marker-runs/` 和 `tools/` 不属于源码，不应上传到公开仓库。背包导出和会话文件可能包含账号 UID。
+![主界面](docs/preview.png)
 
 ## 开发
 
-源码包含前端、内置资料、PowerShell 服务和 C# 标记器。正常使用不需要开发环境。
-
-使用 Node.js 18 或更高版本可重新生成单文件界面和运行评分测试：
-
-```sh
+```powershell
 node source/repack.mjs
 node scripts/test-engine.cjs
 node scripts/test-mark-plan.cjs
-```
-
-在 Windows PowerShell 中可测试匹配规则与本机中文 OCR：
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-marker-core.ps1
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-marker-ocr.ps1
-```
-
-这些测试不向游戏发送输入。验证范围见 [独立验证记录](docs/VALIDATION.md)。
-
-## 许可证与相关项目
-
-整体按 [AGPL-3.0](LICENSE) 提供，完整源码在本仓库中。第三方许可与修改记录保留在 [licenses](licenses) 中。
-
-- [Fribbels HSR Optimizer](https://github.com/fribbels/hsr-optimizer)：属性评分核心与角色权重，保留 MIT 许可。
-- [Reliquary Archiver](https://github.com/IceDynamix/reliquary-archiver)：完整背包导出；Windows EXE 已内置 v0.20.0 PktMon 版，保留 MIT 许可。
-- [StarRailRes](https://github.com/Mar-7th/StarRailRes)：遗器单件名称资料，保留 AGPL-3.0 许可。
-
-本项目与游戏官方无隶属关系，游戏名称和资料权利归原权利人所有。
-
-## 构建 Windows EXE
-
-Windows 10/11 自带的 .NET Framework 编译器可构建桌面程序。PowerShell 运行：
-
-```powershell
+node scripts/test-import-main.cjs
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-layout.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File desktop/build.ps1
 ```
 
-首次构建会下载并校验固定版本的微软 WebView2 SDK 和 Reliquary 官方 EXE，输出到 `dist/`。ZIP 仅包含 EXE 与使用说明；GitHub Actions 使用同一脚本构建并发布。
+构建使用固定版本并校验 SHA256 的微软 WebView2 SDK 与 Reliquary 官方组件，输出 EXE 及 ZIP 至 dist。源码与全部依赖许可随 EXE 内置，也在本仓库提供。
 
-星空图片：NASA [The Seven Sisters](https://www.nasa.gov/image-article/seven-sisters/)，按其[媒体使用指南](https://www.nasa.gov/nasa-brand-center/images-and-media/)使用。未使用第三方脚本的界面图片。
+## 相关项目与许可
+
+整体 [AGPL-3.0](LICENSE)。第三方声明见 [licenses](licenses)。
+
+- [Fribbels](https://github.com/fribbels/hsr-optimizer)：评分核心与角色权重，MIT。
+- [Reliquary Archiver](https://github.com/IceDynamix/reliquary-archiver)：背包读取，MIT。
+- [HSR-Scanner](https://github.com/kel-z/HSR-Scanner)：库存区域坐标与键盘遍历参考，GPL-3.0，修改说明见来源记录。
+- [三月七小助手](https://github.com/moesnow/March7thAssistant)：参考固定画面区域与界面确认的自动化思路，没有直接调用其清理规则。
+- [StarRailRes](https://github.com/Mar-7th/StarRailRes)：遗器单件名称资料，AGPL-3.0。
+
+本项目与游戏官方无隶属关系，不执行分解确认。
+
+## 逐段强化原型
+
+规则与状态流程见 source/upgrade-flow.js：每次 +3，未满级平均潜力 ≥80 继续，满级按当前分 ≥80 保留；低分仅标弃置。材料允许专用经验与未锁定、未装备的四星及以下遗器，禁止吞五星。
+
+流程已通过模拟执行器测试，尚未接入真实游戏强化按钮与材料选择；本版 EXE 暂不具备自动强化功能。

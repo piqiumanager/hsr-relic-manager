@@ -1,5 +1,5 @@
 // Purpose-limited native input: only a selected StarRail client, grid clicks,
-// one calibrated discard control, and scrolling. No keyboard or salvage action.
+// fixed inventory controls, B/A/D/S navigation, and scrolling. No salvage action.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,13 +16,18 @@ public static class RelicNative {
   [StructLayout(LayoutKind.Sequential)] struct RECT { public int L,T,R,B; }
   [StructLayout(LayoutKind.Sequential)] struct POINT { public int X,Y; }
   [StructLayout(LayoutKind.Sequential)] struct MI { public int dx,dy; public uint mouseData,dwFlags,time; public IntPtr extra; }
-  [StructLayout(LayoutKind.Explicit)] struct IU { [FieldOffset(0)] public MI mouse; }
+  [StructLayout(LayoutKind.Sequential)] struct KI { public ushort key,scan; public uint flags,time; public IntPtr extra; }
+  [StructLayout(LayoutKind.Explicit)] struct IU { [FieldOffset(0)] public MI mouse; [FieldOffset(0)] public KI keyboard; }
   [StructLayout(LayoutKind.Sequential)] struct INPUT { public uint type; public IU u; }
   [DllImport("user32.dll")] static extern bool GetClientRect(IntPtr h,out RECT r);
   [DllImport("user32.dll")] static extern bool ClientToScreen(IntPtr h,ref POINT p);
   [DllImport("user32.dll")] static extern bool IsIconic(IntPtr h);
   [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr h,int command);
+  [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h,IntPtr p);
+  [DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
+  [DllImport("user32.dll")] static extern bool AttachThreadInput(uint from,uint to,bool attach);
   [DllImport("user32.dll")] static extern bool SetCursorPos(int x,int y);
   [DllImport("user32.dll",SetLastError=true)] static extern uint SendInput(uint n,INPUT[] input,int size);
   [DllImport("user32.dll")] static extern short GetAsyncKeyState(int key);
@@ -39,7 +44,24 @@ public static class RelicNative {
     if(r.R<960||r.B<540)throw new Exception("请使用至少 960×540 的游戏窗口。");
     return new RelicWindow {Handle=h,X=pt.X,Y=pt.Y,Width=r.R,Height=r.B,ProcessId=process.Id};
   }
-  public static void Activate(RelicWindow w) { SetForegroundWindow(w.Handle); Thread.Sleep(450); }
+  public static void Activate(RelicWindow w) {
+    ShowWindow(w.Handle,9);SetForegroundWindow(w.Handle);Thread.Sleep(500);
+    if(GetForegroundWindow()!=w.Handle){uint current=GetCurrentThreadId(),foreground=GetWindowThreadProcessId(GetForegroundWindow(),IntPtr.Zero);bool attached=false;
+      try{if(foreground!=current)attached=AttachThreadInput(current,foreground,true);SetForegroundWindow(w.Handle);}finally{if(attached)AttachThreadInput(current,foreground,false);}Thread.Sleep(500);
+    }
+    Guard(w);
+  }
+  public static void TapNavigation(RelicWindow w,string key) {
+    Guard(w);ushort vk;
+    switch(key){case "B":vk=0x42;break;case "A":vk=0x41;break;case "D":vk=0x44;break;case "S":vk=0x53;break;default:throw new Exception("不允许的导航按键。");}
+    var inputs=new INPUT[2];inputs[0].type=inputs[1].type=1;inputs[0].u.keyboard.key=inputs[1].u.keyboard.key=vk;inputs[1].u.keyboard.flags=2;
+    if(SendInput(2,inputs,Marshal.SizeOf(typeof(INPUT)))!=2){var up=new INPUT[1];up[0]=inputs[1];SendInput(1,up,Marshal.SizeOf(typeof(INPUT)));throw new Exception("导航按键未完整发送，已停止。");}
+  }
+  public static bool ClearlyUnlocked(Bitmap b) {
+    int white=0,dark=0,gold=0,total=b.Width*b.Height;
+    for(int y=0;y<b.Height;y++)for(int x=0;x<b.Width;x++){var p=b.GetPixel(x,y);if(p.R>220&&p.G>220&&p.B>220)white++;if(p.R<80&&p.G<80&&p.B<80)dark++;if(p.R>145&&p.G>105&&p.B<120)gold++;}
+    return (double)white/total>0.3&&(double)dark/total>0.02&&(double)gold/total<0.1;
+  }
   public static void Guard(RelicWindow w) {
     if(StopPressed())throw new OperationCanceledException("已按 F8 停止。");
     var now=FindGame();
@@ -66,6 +88,7 @@ public static class RelicNative {
   public static void ClickGrid(RelicWindow w,int x,int y) { ClickAt(w,x,y); }
   public static void ClickDiscard(RelicWindow w,int x,int y) { ClickAt(w,x,y); }
   public static void ScrollDown(RelicWindow w,int x,int y) { SendMouse(w,x,y,0x0800,unchecked((uint)-120)); }
+  public static void ScrollToTop(RelicWindow w,int x,int y) { for(int i=0;i<12;i++){SendMouse(w,x,y,0x0800,12000);Thread.Sleep(20);} }
   public static Bitmap Crop(Bitmap b,int x,int y,int width,int height) {
     if(x<0||y<0||width<4||height<4||x+width>b.Width||y+height>b.Height)throw new Exception("校准区域超出游戏画面。");
     return b.Clone(new Rectangle(x,y,width,height),PixelFormat.Format32bppArgb);
@@ -81,29 +104,5 @@ public static class RelicNative {
   }
   public static string ImageHash(Bitmap b) {
     using(var small=new Bitmap(b,new Size(32,20))){var text=new System.Text.StringBuilder();for(int y=0;y<20;y++)for(int x=0;x<32;x++){var p=small.GetPixel(x,y);text.Append((char)('A'+(p.R+p.G+p.B)/48));}return text.ToString();}
-  }
-  // Calibration is user-driven on a still screenshot. Its clicks never reach the game.
-  public static int[][] Calibrate(Bitmap screenshot,string[] steps,string stopPath) {
-    var points=new List<int[]>();
-    using(var form=new Form())using(var image=(Bitmap)screenshot.Clone()){
-      form.Text="遗器弃置位置校准 · Esc 取消";form.StartPosition=FormStartPosition.CenterScreen;form.TopMost=true;form.KeyPreview=true;
-      int screenWidth=Screen.PrimaryScreen.WorkingArea.Width-80,screenHeight=Screen.PrimaryScreen.WorkingArea.Height-110;
-      double scale=Math.Min(1.0,Math.Min((double)screenWidth/image.Width,(double)(screenHeight-90)/image.Height));
-      int width=(int)(image.Width*scale),height=(int)(image.Height*scale);
-      form.ClientSize=new Size(width,height+90);form.FormBorderStyle=FormBorderStyle.FixedDialog;form.MaximizeBox=false;form.MinimizeBox=false;
-      var heading=new Label {Dock=DockStyle.Top,Height=55,BackColor=Color.FromArgb(32,38,60),ForeColor=Color.White,Font=new Font("Microsoft YaHei UI",11),Padding=new Padding(12,10,8,5)};
-      var picture=new PictureBox {Top=55,Left=0,Width=width,Height=height,Image=image,SizeMode=PictureBoxSizeMode.StretchImage};
-      var help=new Label {Top=height+55,Height=35,Left=0,Width=width,Text="依次单击提示位置。点错可按退格撤销，Esc 取消。截图上的点击不会操作游戏。",Padding=new Padding(10,7,0,0),ForeColor=Color.DimGray};
-      Action update=()=>{heading.Text=String.Format("第 {0}/{1} 步：{2}",Math.Min(points.Count+1,steps.Length),steps.Length,steps[Math.Min(points.Count,steps.Length-1)]);picture.Invalidate();};
-      picture.Paint+=(sender,args)=>{using(var pen=new Pen(Color.FromArgb(90,220,190),2)){for(int i=0;i<points.Count;i++){float x=(float)(points[i][0]*scale),y=(float)(points[i][1]*scale);args.Graphics.DrawEllipse(pen,x-5,y-5,10,10);args.Graphics.DrawString((i+1).ToString(),SystemFonts.DefaultFont,Brushes.White,x+6,y-8);}}};
-      picture.MouseClick+=(sender,args)=>{points.Add(new int[]{(int)Math.Round(args.X/scale),(int)Math.Round(args.Y/scale)});if(points.Count==steps.Length){form.DialogResult=DialogResult.OK;form.Close();}else update();};
-      form.KeyDown+=(sender,args)=>{if(args.KeyCode==Keys.Escape){form.DialogResult=DialogResult.Cancel;form.Close();}if(args.KeyCode==Keys.Back&&points.Count>0){points.RemoveAt(points.Count-1);update();}};
-      form.Controls.Add(picture);form.Controls.Add(heading);form.Controls.Add(help);update();
-      using(var timer=new System.Windows.Forms.Timer()){
-        timer.Interval=180;timer.Tick+=(sender,args)=>{if(StopPressed()||System.IO.File.Exists(stopPath)){form.DialogResult=DialogResult.Cancel;form.Close();}};timer.Start();
-        if(form.ShowDialog()!=DialogResult.OK)throw new OperationCanceledException("已取消位置校准。");
-      }
-    }
-    return points.ToArray();
   }
 }

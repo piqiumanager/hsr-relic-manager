@@ -21,7 +21,10 @@ globalThis.RelicEngine = (() => {
     const issues=[];const grade=number(raw.rarity??raw.grade);const enhance=number(raw.level??raw.enhance);
     const p=part(raw.slot??raw.part);const setRaw=String(raw.set_id??raw.set??'');
     const set=D.sets[setRaw]||Object.values(D.sets).find(x=>x.en===setRaw||x.name===setRaw);
-    const mainStat=stat(raw.mainstat??raw.main?.stat??raw.main_stat);
+    let mainStat=stat(raw.mainstat??raw.main?.stat??raw.main_stat);
+    // Scanner/Reliquary use HP/ATK/DEF for percentage mains outside head/hands.
+    // Slot rules disambiguate these names; substat names must remain unchanged.
+    if(['Body','Feet','PlanarSphere','LinkRope'].includes(p)&&['HP','ATK','DEF'].includes(mainStat))mainStat+='%';
     const toSubs=(arr)=>list(arr).map(s=>({stat:stat(s.key??s.stat),value:number(s.value),addedRolls:number(s.addedRolls??s.added_rolls??(Number.isInteger(s.count)?s.count-1:undefined))||0,rollsKnown:Number.isInteger(s.count)||Number.isFinite(s.addedRolls)||Number.isFinite(s.added_rolls)}));
     const subs=toSubs(raw.substats),preview=toSubs(raw.preview_substats??raw.previewSubstats??[]);
     if(!p)issues.push('无法识别部位');
@@ -43,7 +46,9 @@ globalThis.RelicEngine = (() => {
     }
     const mainValue=number(raw.main?.value??raw.mainstat_value);
     const calculatedMain=C.MainStatsValues?.[mainStat]?.[5];
-    return {id:String(raw._uid??raw.id??`row-${index+1}`),index,grade,enhance,part:p||'Unknown',setId:set?.id||setRaw,set:set?.en||setRaw,setName:set?.name||setRaw||'未知套装',main:{stat:mainStat,value:Number.isFinite(mainValue)?mainValue:calculatedMain?calculatedMain.base+calculatedMain.increment*enhance:null},substats:subs,previewSubstats:preview,locked,discarded,owner,issues:[...new Set(issues)],raw};
+    const protectionIssues=issues.filter(s=>['锁定状态未知','装备状态未知','遗器 ID 重复'].includes(s));
+    const scoringIssues=issues.filter(s=>!protectionIssues.includes(s));
+    return {id:String(raw._uid??raw.id??`row-${index+1}`),index,grade,enhance,part:p||'Unknown',setId:set?.id||setRaw,set:set?.en||setRaw,setName:set?.name||setRaw||'未知套装',main:{stat:mainStat,value:Number.isFinite(mainValue)?mainValue:calculatedMain?calculatedMain.base+calculatedMain.increment*enhance:null},substats:subs,previewSubstats:preview,locked,discarded,owner,issues:[...new Set(issues)],scoringIssues,raw};
   }
   function parse(input){
     let root=typeof input==='string'?JSON.parse(input.replace(/^\uFEFF/,'')):input;
@@ -97,7 +102,7 @@ globalThis.RelicEngine = (() => {
     const rows=[];
     for(let i=0;i<imported.relics.length;i++){
       const r=imported.relics[i];let scores=[];
-      if(!r.issues.length)for(let j=0;j<profiles.length;j++){const v=evaluate(r,profiles[j],metas[j]);if(v)scores.push(v);}
+      if(!(r.scoringIssues??r.issues).length)for(let j=0;j<profiles.length;j++){const v=evaluate(r,profiles[j],metas[j]);if(v)scores.push(v);}
       const rank=s=>r.enhance===15?s.current:s.average;
       scores.sort((a,b)=>rank(b)-rank(a)||b.best-a.best);
       let best=scores[0]||null;
@@ -122,7 +127,9 @@ globalThis.RelicEngine = (() => {
       const buckets=new Map();for(const row of rows)for(const s of row.scores){const k=[s.id,row.part,row.setId,row.main.stat].join('|');if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push({row,score:row.enhance===15?s.current:s.average});}
       for(const bucket of buckets.values()){bucket.sort((a,b)=>b.score-a.score);for(const {row}of bucket.slice(0,cfg.reserve))if(row.status==='discard'){row.status='review';row.reasons.push('触发自定义每组保留数量');}}
     }
-    onProgress(1);return{rows,profileCount:profiles.length,missing,settings:cfg,at:new Date().toISOString()};
+    const diagnostics={total:rows.length,scored:rows.filter(r=>r.scores.length).length,unscored:rows.filter(r=>!r.scores.length).length,protected:rows.filter(r=>r.status==='review'&&r.scores.length).length,issues:{}};
+    for(const r of rows.filter(r=>!r.scores.length))for(const issue of r.reasons)diagnostics.issues[issue]=(diagnostics.issues[issue]||0)+1;
+    onProgress(1);return{rows,profileCount:profiles.length,missing,settings:cfg,diagnostics,at:new Date().toISOString()};
   }
   const status=r=>r.manual||r.status;
   function exportResults(result,imported){
@@ -172,7 +179,7 @@ globalThis.RelicEngine = (() => {
       candidates.push({key,ids:unmarked.map(x=>x.id),count:unmarked.length,setId:r.setId,setName:r.setName,pieceName,part:r.part,enhance:r.enhance,main:r.main,substats:r.substats,visualSubstats:[...r.substats,...r.previewSubstats]});
     }
     if(!candidates.length)throw Error('没有可自动标记的候选：已锁定、已装备、状态不明或已弃置的遗器不会再次点击。');
-    return {schema:'hsr-marker-plan-v1',captureId:imported.captureId,createdAt:new Date().toISOString(),candidates,total:candidates.reduce((n,x)=>n+x.count,0),skips,allowSalvage:false};
+    return {schema:'hsr-marker-plan-v1',captureId:imported.captureId,createdAt:new Date().toISOString(),candidates,inventoryCount:list(imported.root.relics).length,total:candidates.reduce((n,x)=>n+x.count,0),skips,allowSalvage:false};
   }
   return{PARTS,STAT_ZH,PRESETS,DEFAULTS,parse,analyze,evaluate,metadata,targets,status,exportResults,demo,settingsValid,markerFingerprint,buildMarkPlan};
 })();

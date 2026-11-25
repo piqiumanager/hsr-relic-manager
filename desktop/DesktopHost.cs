@@ -21,7 +21,7 @@ namespace RelicDesktop {
     static string Value(string[] args,string key){int i=Array.IndexOf(args,key);return i>=0&&i+1<args.Length?args[i+1]:null;}
     public DeskForm(string appPath,string rootPath,string[] args){
         app=appPath;root=rootPath;testing=args.Contains("--self-test");report=Value(args,"--report");screenshot=Value(args,"--screenshot");
-        Text="星铁遗器整理助手 · v1.2";StartPosition=FormStartPosition.CenterScreen;ClientSize=new Size(1280,850);MinimumSize=new Size(960,680);BackColor=Color.FromArgb(245,247,253);
+        Text="绷铁遗器一键分解 · v1.3";StartPosition=FormStartPosition.CenterScreen;ClientSize=new Size(1100,900);MinimumSize=new Size(780,620);BackColor=Color.FromArgb(245,247,253);
         string icon=Path.Combine(app,"app.ico");if(File.Exists(icon))Icon=new Icon(icon);
         loading=new Label{Dock=DockStyle.Fill,Text="正在启动遗器整理助手…",TextAlign=ContentAlignment.MiddleCenter,Font=new Font("Microsoft YaHei UI",13)};Controls.Add(loading);
         if(testing){ShowInTaskbar=false;Location=new Point(-10000,-10000);StartPosition=FormStartPosition.Manual;}
@@ -88,7 +88,7 @@ namespace RelicDesktop {
     }
     async Task SelfTest(string version){
         try{
-            await view.CoreWebView2.ExecuteScriptAsync("globalThis.__desktopHealth='pending';(async()=>{if(!globalThis.QuickFlow||!globalThis.RelicDesk||!globalThis.LOCAL_CONFIG)throw Error('UI globals missing');const r=await fetch('/api/health',{headers:{'X-Relic-Token':LOCAL_CONFIG.token}});const h=await r.json();if(h.version!=='1.2')throw Error('health');globalThis.__desktopHealth='ok';document.getElementById('demoBtn').click();})().catch(e=>globalThis.__desktopHealth=e.message)");
+            await view.CoreWebView2.ExecuteScriptAsync("globalThis.__desktopHealth='pending';(async()=>{if(!globalThis.QuickFlow||!globalThis.RelicDesk||!globalThis.LOCAL_CONFIG)throw Error('UI globals missing');const r=await fetch('/api/health',{headers:{'X-Relic-Token':LOCAL_CONFIG.token}});const h=await r.json();if(h.version!=='1.3')throw Error('health');globalThis.__desktopHealth='ok';document.getElementById('demoBtn').click();})().catch(e=>globalThis.__desktopHealth=e.message)");
             // ExecuteScriptAsync doesn't await JavaScript promises; poll a concrete result.
             string demo="";
             for(int i=0;i<100;i++){await Task.Delay(150);demo=await view.CoreWebView2.ExecuteScriptAsync("JSON.stringify({ready:!!RelicDesk.result,count:RelicDesk.result?.rows.length,quick:!!QuickFlow,token:!!LOCAL_CONFIG.token,health:globalThis.__desktopHealth})");if(demo.Contains("112"))break;}

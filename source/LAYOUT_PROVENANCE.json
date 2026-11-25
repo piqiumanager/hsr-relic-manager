@@ -1,0 +1,22 @@
+{
+  "date": "2026-11-25",
+  "referenceLayout": "1920x1080 PC keyboard/mouse",
+  "scanner": {
+    "repo": "kel-z/HSR-Scanner",
+    "commit": "e443960df41d6cd08aee187f9e5779e1e22d9616",
+    "paths": [
+      "src/config/screenshot.py",
+      "src/config/relic_scan.py",
+      "src/services/scanner/scanner.py",
+      "src/services/scanner/parsers/relic_strategy.py"
+    ],
+    "license": "GPL-3.0",
+    "modifications": "Converted proportions and snake navigation to guarded PowerShell/C# implementation. Added exact snapshot matching and explicit discard transition confirmation."
+  },
+  "march7": {
+    "repo": "moesnow/March7thAssistant",
+    "commit": "07496b452e73fd9d47c3be3de706c787645231db",
+    "path": "tasks/power/weekly_relic_cleanup.py",
+    "usage": "Studied bounded OCR regions and checked navigation; no game smart-discard rules copied."
+  }
+}
