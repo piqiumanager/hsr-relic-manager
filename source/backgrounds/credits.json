@@ -1,0 +1,63 @@
+{
+  "website": "https://sr.mihoyo.com/main?nav=character",
+  "api": "https://act-api-takumi-static.mihoyo.com/content_v2_user/app/1963de8dc19e461c/getContentList?iChanId=253&iPageSize=999&sLangKey=zh-cn&iPage=1",
+  "retrieved": "2026-11-25",
+  "copyright": "角色美术版权归米哈游及相关权利人。仅作非商业同人辅助工具界面装饰，素材不适用本项目代码的 AGPL 许可。",
+  "processing": "Official PNG artwork resized to 1000 pixels high and encoded as WebP; transparency is applied only in CSS.",
+  "images": [
+    {
+      "name": "黄泉",
+      "file": "source/backgrounds/acheron.webp",
+      "infoId": 122731,
+      "id": "acheron",
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/122731/30a417e8ae75a26e0d704d406aa2e359_904192422959935615.png",
+      "originalSha256": "039028742d1954c723392c9eaa5dd3b5224bc3ddfb811e93fd1959268514ec36",
+      "sha256": "74c7fbb622d5c5492fa9d92a353f9bea0b326bc308f56ba92ce7cbeaf5cba3b3"
+    },
+    {
+      "name": "知更鸟",
+      "file": "source/backgrounds/robin.webp",
+      "infoId": 123361,
+      "id": "robin",
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/123361/9de6f839636ed1c017ee016df8f75f42_5334978025784832187.png",
+      "originalSha256": "37cec2a4ca163e30f749f464a0e41b0959bb12b679b04fbd4c36976e5bd4960b",
+      "sha256": "d89bf14ea6160d5761ae63889ce86a624b50c552ed02d9092fd8af748187ad74"
+    },
+    {
+      "name": "姬子",
+      "file": "source/backgrounds/himeko.webp",
+      "infoId": 101932,
+      "id": "himeko",
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/db603205e1dc5a4252527be4cd95f2df_8027692243678107578.png",
+      "originalSha256": "b4dd9dbdf21c0163f7fa84fa332b83e36661cfb023ad63cf3d2ca2a1e954641f",
+      "sha256": "6b6eebebe31e23be8559ab48e55f2459b9f8d12cfde1bb8914d5b70a56c43fd4"
+    },
+    {
+      "name": "三月七",
+      "file": "source/backgrounds/march7.webp",
+      "infoId": 101936,
+      "id": "march7",
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/02fd576cb826602c5b5c9d8401f6e766_6143441990530187677.png",
+      "originalSha256": "c2badd92eb2f6d61fe63847dc7377b47186fa37b47feb2e7eec1902ed1b30e05",
+      "sha256": "561badfb310cccb091f42d477de6e27fd8e9de7aaf5a2813715de4a601d54226"
+    },
+    {
+      "name": "卡芙卡",
+      "file": "source/backgrounds/kafka.webp",
+      "infoId": 101933,
+      "id": "kafka",
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/df3140700802300d7cd1bae7ddb93391_7866142853823486156.png",
+      "originalSha256": "e1a668378e7c499846faae0cb59d265c146063b0e30cd9114bc5f83ffe2a621f",
+      "sha256": "0a88fa99c6777ada493ff3ef006bff5b05cbdca08cc24a228a8b403e46dd344a"
+    },
+    {
+      "name": "流萤",
+      "file": "source/backgrounds/firefly.webp",
+      "infoId": 123868,
+      "id": "firefly",
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/123868/748c554adb15564a18583fd7949cf008_797073333688994248.png",
+      "originalSha256": "c4549cf7e04d4190c3b9d1b6a70621d93ced499b7dba51d6ec683aae9a75ca3d",
+      "sha256": "7c2665b1b54f07f9e8611e1b3aecf49867d582e00b7c36633ff3660325928ced"
+    }
+  ]
+}

@@ -21,7 +21,12 @@ namespace RelicDesktop {
     static string Value(string[] args,string key){int i=Array.IndexOf(args,key);return i>=0&&i+1<args.Length?args[i+1]:null;}
     public DeskForm(string appPath,string rootPath,string[] args){
         app=appPath;root=rootPath;testing=args.Contains("--self-test");report=Value(args,"--report");screenshot=Value(args,"--screenshot");
-        Text="绷铁遗器一键分解 · v1.3";StartPosition=FormStartPosition.CenterScreen;ClientSize=new Size(1100,900);MinimumSize=new Size(780,620);BackColor=Color.FromArgb(245,247,253);
+        Text="绷铁遗器一键分解 · v1.4";StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.None;BackColor=Color.White;
+        // WinForms dimensions are physical pixels; WebView2 uses device-independent pixels.
+        float scale;using(var graphics=CreateGraphics())scale=graphics.DpiX/96f;
+        var area=Screen.FromControl(this).WorkingArea;
+        ClientSize=new Size(Math.Min((int)(1000*scale),area.Width-60),Math.Min((int)(740*scale),area.Height-95));
+        MinimumSize=new Size(Math.Min((int)(780*scale),area.Width-60),Math.Min((int)(620*scale),area.Height-60));
         string icon=Path.Combine(app,"app.ico");if(File.Exists(icon))Icon=new Icon(icon);
         loading=new Label{Dock=DockStyle.Fill,Text="正在启动遗器整理助手…",TextAlign=ContentAlignment.MiddleCenter,Font=new Font("Microsoft YaHei UI",13)};Controls.Add(loading);
         if(testing){ShowInTaskbar=false;Location=new Point(-10000,-10000);StartPosition=FormStartPosition.Manual;}
@@ -88,13 +93,15 @@ namespace RelicDesktop {
     }
     async Task SelfTest(string version){
         try{
-            await view.CoreWebView2.ExecuteScriptAsync("globalThis.__desktopHealth='pending';(async()=>{if(!globalThis.QuickFlow||!globalThis.RelicDesk||!globalThis.LOCAL_CONFIG)throw Error('UI globals missing');const r=await fetch('/api/health',{headers:{'X-Relic-Token':LOCAL_CONFIG.token}});const h=await r.json();if(h.version!=='1.3')throw Error('health');globalThis.__desktopHealth='ok';document.getElementById('demoBtn').click();})().catch(e=>globalThis.__desktopHealth=e.message)");
+            await view.CoreWebView2.ExecuteScriptAsync("globalThis.__desktopHealth='pending';(async()=>{if(!globalThis.QuickFlow||!globalThis.RelicDesk||!globalThis.UpgradeFlow||!globalThis.LOCAL_CONFIG)throw Error('UI globals missing');const r=await fetch('/api/health',{headers:{'X-Relic-Token':LOCAL_CONFIG.token}});const h=await r.json();if(h.version!=='1.4')throw Error('health');const m=document.getElementById('mode');m.value='upgrade';m.dispatchEvent(new Event('change'));if(document.getElementById('markBtn').textContent!=='开始强化')throw Error('upgrade mode');if(document.documentElement.lang!=='zh-CN')throw Error('language');globalThis.__desktopHealth='ok';document.getElementById('demoBtn').click();})().catch(e=>globalThis.__desktopHealth=e.message)");
             // ExecuteScriptAsync doesn't await JavaScript promises; poll a concrete result.
             string demo="";
             for(int i=0;i<100;i++){await Task.Delay(150);demo=await view.CoreWebView2.ExecuteScriptAsync("JSON.stringify({ready:!!RelicDesk.result,count:RelicDesk.result?.rows.length,quick:!!QuickFlow,token:!!LOCAL_CONFIG.token,health:globalThis.__desktopHealth})");if(demo.Contains("112"))break;}
             if(!demo.Contains("112")||!demo.Contains("ok"))throw new Exception("示例评分或桌面界面自检失败："+demo);
+            string layout=await view.CoreWebView2.ExecuteScriptAsync("JSON.stringify({visible:document.getElementById('stopBtn').getBoundingClientRect().bottom<=innerHeight,background:document.getElementById('characterBackground').naturalWidth>0,count:HSRBackgroundData.length,width:innerWidth,height:innerHeight})");
+            if(!layout.Contains("true")||layout.Contains("false"))throw new Exception("界面布局或角色背景自检失败："+layout);
             if(screenshot!=null){Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(screenshot)));using(var file=File.Create(screenshot))await view.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png,file);}
-            if(report!=null)File.WriteAllText(report,"PASS\nWebView2="+version+"\nDemo="+demo+"\nBundledReliquary="+File.Exists(Path.Combine(app,"tools","reliquary-archiver-pktmon-x64.exe"))+"\nNo game capture or mouse input was invoked.\n");
+            if(report!=null)File.WriteAllText(report,"PASS\nWebView2="+version+"\nDemo="+demo+"\nLayout="+layout+"\nBundledReliquary="+File.Exists(Path.Combine(app,"tools","reliquary-archiver-pktmon-x64.exe"))+"\nNo game capture or mouse input was invoked.\n");
             Close();
         }catch(Exception e){Fail(e);}
     }

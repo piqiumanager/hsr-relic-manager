@@ -53,7 +53,7 @@ public static class RelicNative {
   }
   public static void TapNavigation(RelicWindow w,string key) {
     Guard(w);ushort vk;
-    switch(key){case "B":vk=0x42;break;case "A":vk=0x41;break;case "D":vk=0x44;break;case "S":vk=0x53;break;default:throw new Exception("不允许的导航按键。");}
+    switch(key){case "B":vk=0x42;break;case "A":vk=0x41;break;case "D":vk=0x44;break;case "S":vk=0x53;break;case "Escape":vk=0x1B;break;default:throw new Exception("不允许的导航按键。");}
     var inputs=new INPUT[2];inputs[0].type=inputs[1].type=1;inputs[0].u.keyboard.key=inputs[1].u.keyboard.key=vk;inputs[1].u.keyboard.flags=2;
     if(SendInput(2,inputs,Marshal.SizeOf(typeof(INPUT)))!=2){var up=new INPUT[1];up[0]=inputs[1];SendInput(1,up,Marshal.SizeOf(typeof(INPUT)));throw new Exception("导航按键未完整发送，已停止。");}
   }
@@ -87,6 +87,25 @@ public static class RelicNative {
   }
   public static void ClickGrid(RelicWindow w,int x,int y) { ClickAt(w,x,y); }
   public static void ClickDiscard(RelicWindow w,int x,int y) { ClickAt(w,x,y); }
+  public static void ClickVerifiedControl(RelicWindow w,int x,int y) { ClickAt(w,x,y); }
+  public static void HoverControl(RelicWindow w,int x,int y) { Guard(w);if(x<0||y<0||x>=w.Width||y>=w.Height)throw new Exception("悬停位置越界。");SetCursorPos(w.X+x,w.Y+y);Thread.Sleep(400);Guard(w); }
+  static bool WhitePixel(Color p){return p.R>185&&p.G>185&&p.B>185&&Math.Abs(p.R-p.B)<45;}
+  public static int CountEmptyMaterialSlots(Bitmap b){
+    var centers=new List<Point>();
+    for(int y=15;y<b.Height-15;y++)for(int x=15;x<b.Width-15;x++){
+      if(!WhitePixel(b.GetPixel(x,y)))continue;
+      int l=x,r=x,t=y,d=y;
+      while(l>0&&x-l<45&&WhitePixel(b.GetPixel(l-1,y)))l--;while(r<b.Width-1&&r-x<45&&WhitePixel(b.GetPixel(r+1,y)))r++;
+      if(r-l<12||r-l>44)continue;
+      while(t>0&&y-t<45&&WhitePixel(b.GetPixel(x,t-1)))t--;while(d<b.Height-1&&d-y<45&&WhitePixel(b.GetPixel(x,d+1)))d++;
+      if(d-t<12||d-t>44||Math.Abs((l+r)/2-x)>4||Math.Abs((t+d)/2-y)>4)continue;
+      var p=new Point((l+r)/2,(t+d)/2);if(centers.Exists(q=>Math.Abs(q.X-p.X)<25&&Math.Abs(q.Y-p.Y)<25))continue;centers.Add(p);
+    }
+    if(centers.Count!=8)return centers.Count;
+    centers.Sort((a,c)=>a.Y.CompareTo(c.Y));
+    for(int i=0;i<4;i++)if(Math.Abs(centers[i].Y-centers[0].Y)>18||Math.Abs(centers[i+4].Y-centers[4].Y)>18)return -1;
+    if(centers[4].Y-centers[0].Y<50)return -1;return 8;
+  }
   public static void ScrollDown(RelicWindow w,int x,int y) { SendMouse(w,x,y,0x0800,unchecked((uint)-120)); }
   public static void ScrollToTop(RelicWindow w,int x,int y) { for(int i=0;i<12;i++){SendMouse(w,x,y,0x0800,12000);Thread.Sleep(20);} }
   public static Bitmap Crop(Bitmap b,int x,int y,int width,int height) {

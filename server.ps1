@@ -14,6 +14,7 @@ $capture = $null
 $markerJob = $null
 $stopRequested = $false
 $lastRequest = Get-Date
+. (Join-Path $base 'upgrade-core.ps1')
 $releaseUrl = 'https://github.com/IceDynamix/reliquary-archiver/releases/download/v0.20.0/reliquary-archiver-pktmon-x64.exe'
 $expectedHash = 'ce4a5bb00ba0c3d681772d9151ac2332934dd1b497926c3d7994f40c2a94cd9d'
 
@@ -45,7 +46,7 @@ function Get-MarkerStatus {
     $ready=$true # Fixed 1920x1080 layout replaces manual calibration.
     if(-not $script:markerJob){return @{state='idle';calibrated=$ready;message='尚未启动游戏内标记。'}}
     $file=Join-Path $script:markerJob.directory 'status.json'
-    if(Test-Path -LiteralPath $file){try{$state=ConvertFrom-Json ([IO.File]::ReadAllText($file,$utf8));if($state.state -in @('starting','calibrating','running')){try{if($script:markerJob.process.HasExited){$state.state='failed';$state.message='标记进程意外结束，请检查 marker-runs 记录后重试。'}}catch{}};$state|Add-Member -NotePropertyName calibrated -NotePropertyValue $ready -Force;return $state}catch{}}
+    if(Test-Path -LiteralPath $file){try{$state=ConvertFrom-Json ([IO.File]::ReadAllText($file,$utf8));if($state.state -in @('starting','calibrating','running','awaitingScore')){try{if($script:markerJob.process.HasExited){$state.state='failed';$state.message='标记进程意外结束，请检查 marker-runs 记录后重试。'}}catch{}};if($script:markerJob.kind -eq 'upgrade' -and ([int]$state.confirmedSteps -gt 0 -or [int]$state.marked -gt 0) -and $script:capture){$script:capture.invalidated=$true};$state|Add-Member -NotePropertyName calibrated -NotePropertyValue $ready -Force;return $state}catch{}}
     if(((Get-Date)-$script:markerJob.started).TotalSeconds -gt 25){
         try{if($script:markerJob.process.HasExited){return @{state='failed';calibrated=$ready;message='标记进程启动失败，请查看 marker-runs 中的记录或重试。'}}}catch{}
     }
@@ -54,23 +55,24 @@ function Get-MarkerStatus {
 
 function Assert-MarkerIdle {
     $state=Get-MarkerStatus
-    if($state.state -in @('running','starting','calibrating')){throw '标记或校准正在进行，请先停止当前任务。'}
+    if($state.state -in @('running','starting','calibrating','awaitingScore')){throw '标记或校准正在进行，请先停止当前任务。'}
 }
 
 function Start-MarkerWorker([string]$Mode,$Plan,[bool]$Preview) {
-    if($Mode -ne 'Run'){throw '本版本自动定位，不再需要手动校准。'}
+    if($Mode -notin @('Run','Upgrade')){throw '本版本自动定位，不再需要手动校准。'}
     Assert-MarkerIdle
     $jobId=(Get-Date -Format 'yyyyMMdd-HHmmss')+'-'+[Guid]::NewGuid().ToString('N').Substring(0,8)
     $dir=Join-Path (Join-Path $dataBase 'marker-runs') $jobId
     [IO.Directory]::CreateDirectory($dir)|Out-Null
-    $args='-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "'+(Join-Path $base 'marker.ps1')+'" -Mode '+$Mode+' -JobDirectory "'+$dir+'" -DataRoot "'+$dataBase+'"'
-    if($Mode -eq 'Run'){
+    $worker=if($Mode -eq 'Upgrade'){'upgrade.ps1'}else{'marker.ps1'}
+    $args='-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "'+(Join-Path $base $worker)+'" -Mode '+$Mode+' -JobDirectory "'+$dir+'" -DataRoot "'+$dataBase+'"'
+    if($Mode -in @('Run','Upgrade')){
         $planFile=Join-Path $dir 'plan.json'
         [IO.File]::WriteAllText($planFile,(ConvertTo-Json $Plan -Depth 40 -Compress),$utf8)
         $args+=' -PlanPath "'+$planFile+'"';if($Preview){$args+=' -PreviewOnly'}
     }
     $process=Start-Process -FilePath 'powershell.exe' -ArgumentList $args -Verb RunAs -WindowStyle Hidden -PassThru
-    $script:markerJob=@{id=$jobId;directory=$dir;process=$process;started=Get-Date}
+    $script:markerJob=@{id=$jobId;directory=$dir;process=$process;started=Get-Date;kind=$(if($Mode -eq 'Upgrade'){'upgrade'}else{'marker'})}
     return @{state='starting';jobId=$jobId;message='已启动，请按游戏内提示操作。'}
 }
 
@@ -91,6 +93,7 @@ function Get-MarkerVisibleValue([string]$Stat,[double]$Value){
 }
 
 function Validate-MarkerPlan($Plan) {
+    if($script:capture -and $script:capture.invalidated){throw '遗器已变化，请重新读取背包。'}
     if(-not $script:capture -or $script:capture.state -ne 'complete' -or $Plan.captureId -ne $script:capture.id){throw '请先用“一键读取背包”重新读取本次账号，再开始自动标记。'}
     if(((Get-Date)-$script:capture.started).TotalMinutes -gt 30){throw '背包快照已超过 30 分钟，请重新读取后标记。'}
     if($Plan.schema -ne 'hsr-marker-plan-v1' -or $Plan.allowSalvage -ne $false -or @($Plan.candidates).Count -lt 1 -or @($Plan.candidates).Count -gt 3000){throw '标记清单无效。'}
@@ -122,7 +125,29 @@ function Validate-MarkerPlan($Plan) {
     return $true
 }
 
+function Validate-UpgradePlan($Plan){
+    if($Plan.operation -ne 'upgrade' -or $Plan.policy.step -ne 3 -or $Plan.policy.threshold -ne 80 -or $Plan.policy.maxLevel -ne 15 -or $Plan.policy.maxRelicMaterialRarity -ne 4 -or $Plan.policy.allowLockedMaterials -ne $false -or $Plan.policy.allowEquippedMaterials -ne $false -or $Plan.allowSalvage -ne $false){throw '强化规则不符合已设定的 +3 / 80 分 / 四星材料规则。'}
+    Validate-MarkerPlan $Plan|Out-Null
+    $data=ConvertFrom-Json ([IO.File]::ReadAllText((Join-Path $base 'source\data.json'),$utf8))
+    if(@($Plan.targetIds).Count -lt 1 -or @($Plan.targetIds).Count -gt 120){throw '强化评分角色列表无效。'}
+    foreach($id in $Plan.targetIds){if(-not $data.profiles.([string]$id)){throw '强化评分角色未收录。'}}
+    foreach($c in $Plan.candidates){if($c.enhance -ge 15 -or $c.enhance%3 -ne 0 -or @($c.initialScores).Count -ne $c.count){throw '强化候选等级或初始评分不完整。'}}
+    return $true
+}
+function Accept-UpgradeDecision($Decision){
+    if(-not $script:markerJob -or $script:markerJob.kind -ne 'upgrade'){throw '没有运行中的强化任务。'}
+    $requestFile=Join-Path $script:markerJob.directory 'request.json'
+    if(-not(Test-Path -LiteralPath $requestFile)){throw '当前没有待回应的强化评分。'}
+    $request=ConvertFrom-Json ([IO.File]::ReadAllText($requestFile,$utf8))
+    if($request.requestId -notmatch '^[a-f0-9]{32}$' -or $Decision.requestId -ne $request.requestId){throw '强化评分回应已过期。'}
+    Assert-UpgradeDecision $request $Decision|Out-Null
+    $file=Join-Path $script:markerJob.directory ('decision-'+$request.requestId+'.json')
+    if(-not(Test-Path -LiteralPath $file)){[IO.File]::WriteAllText($file+'.tmp',(Json $Decision),$utf8);Move-Item -LiteralPath ($file+'.tmp') -Destination $file -Force}
+    return @{state='accepted';requestId=$request.requestId}
+}
+
 function Start-Capture {
+    Assert-MarkerIdle
     if ($script:capture -and $script:capture.state -eq 'running') {
         throw '上一次读取仍在进行，请稍候。'
     }
@@ -231,11 +256,17 @@ try {
                     try{Send-Response $stream 200 (Json (Start-MarkerWorker 'Calibrate' $null $false))}catch{Send-Response $stream 400 (Json @{error=$_.Exception.Message})}
                 } elseif ($route -eq '/api/marker/start' -and $method -eq 'POST') {
                     try{$body=ConvertFrom-Json $request.body;Validate-MarkerPlan $body.plan|Out-Null;Send-Response $stream 200 (Json (Start-MarkerWorker 'Run' $body.plan ([bool]$body.previewOnly)))}catch{Send-Response $stream 400 (Json @{error=$_.Exception.Message})}
+                } elseif ($route -eq '/api/upgrade/start' -and $method -eq 'POST') {
+                    try{$body=ConvertFrom-Json $request.body;Validate-UpgradePlan $body.plan|Out-Null;Send-Response $stream 200 (Json (Start-MarkerWorker 'Upgrade' $body.plan ([bool]$body.previewOnly)))}catch{Send-Response $stream 400 (Json @{error=$_.Exception.Message})}
+                } elseif ($route -eq '/api/upgrade/plan' -and $method -eq 'GET') {
+                    if($script:markerJob -and $script:markerJob.kind -eq 'upgrade'){Send-Response $stream 200 ([IO.File]::ReadAllText((Join-Path $script:markerJob.directory 'plan.json'),$utf8))}else{Send-Response $stream 404 (Json @{error='没有运行中的强化任务。'})}
+                } elseif ($route -eq '/api/upgrade/decision' -and $method -eq 'POST') {
+                    try{Send-Response $stream 200 (Json (Accept-UpgradeDecision (ConvertFrom-Json $request.body)))}catch{Send-Response $stream 400 (Json @{error=$_.Exception.Message})}
                 } elseif ($route -eq '/api/marker/stop' -and $method -eq 'POST') {
                     if($script:markerJob){[IO.File]::WriteAllText((Join-Path $script:markerJob.directory 'stop'),'stop',$utf8)}
                     Send-Response $stream 200 (Json @{state='stopping';message='已请求停止，脚本会在下一次输入前停下。'})
                 } elseif ($route -eq '/api/health' -and $method -eq 'GET') {
-                    Send-Response $stream 200 (Json @{state='ok';version='1.3';capture='Reliquary v0.20.0';scoring='Fribbels';marker='Chinese Windows OCR'})
+                    Send-Response $stream 200 (Json @{state='ok';version='1.4';capture='Reliquary v0.20.0';scoring='Fribbels';marker='Chinese Windows OCR'})
                 } elseif ($route -eq '/api/exit' -and $method -eq 'POST') {
                     Send-Response $stream 200 (Json @{state='closing'})
                     if($script:markerJob){[IO.File]::WriteAllText((Join-Path $script:markerJob.directory 'stop'),'stop',$utf8)}

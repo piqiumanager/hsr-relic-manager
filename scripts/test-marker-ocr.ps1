@@ -15,4 +15,5 @@ $lines=Read-MarkerOcr $file
 $observed=@($lines | ForEach-Object { Get-StatObservation $_.text })
 $expected=@(@{stat='ATK%';value=8.64},@{stat='CRIT DMG';value=19.44},@{stat='SPD';value=6.9},@{stat='DEF';value=21.168754})
 if(-not (Test-ObservedStats $observed $expected)){throw ('Synthetic OCR mismatch: '+(ConvertTo-Json $lines -Compress))}
-Write-Output ('Windows Chinese OCR passed: '+(ConvertTo-Json $lines -Compress))
+if(@($lines|Where-Object{$_.width-gt 0-and$_.height-gt 0-and$_.words.Count-gt 0}).Count-ne 4){throw 'OCR word geometry missing'}
+Write-Output 'Windows Simplified Chinese OCR passed: 4 attribute lines, bounding boxes and word geometry.'

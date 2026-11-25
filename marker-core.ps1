@@ -114,7 +114,7 @@ function Read-MarkerOcr([string]$File) {
         $decoder=Wait-MarkerWinRT ([Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($stream)) ([Windows.Graphics.Imaging.BitmapDecoder])
         $bitmap=Wait-MarkerWinRT ($decoder.GetSoftwareBitmapAsync()) ([Windows.Graphics.Imaging.SoftwareBitmap])
         $recognition=Wait-MarkerWinRT ($script:MarkerOcr.RecognizeAsync($bitmap)) ([Windows.Media.Ocr.OcrResult])
-        $lines=@();foreach($line in $recognition.Lines){$words=@($line.Words);if($words.Count){$y=($words | ForEach-Object {$_.BoundingRect.Y} | Measure-Object -Minimum).Minimum;$lines+=,@{text=$line.Text;y=[double]$y}}}
+        $lines=@();foreach($line in $recognition.Lines){$words=@($line.Words);if($words.Count){$x=($words|ForEach-Object{$_.BoundingRect.X}|Measure-Object -Minimum).Minimum;$y=($words|ForEach-Object{$_.BoundingRect.Y}|Measure-Object -Minimum).Minimum;$right=($words|ForEach-Object{$_.BoundingRect.X+$_.BoundingRect.Width}|Measure-Object -Maximum).Maximum;$bottom=($words|ForEach-Object{$_.BoundingRect.Y+$_.BoundingRect.Height}|Measure-Object -Maximum).Maximum;$wordBoxes=@($words|ForEach-Object{@{text=$_.Text;x=[double]$_.BoundingRect.X;y=[double]$_.BoundingRect.Y;width=[double]$_.BoundingRect.Width;height=[double]$_.BoundingRect.Height}});$lines+=,@{text=$line.Text;x=[double]$x;y=[double]$y;width=[double]($right-$x);height=[double]($bottom-$y);words=$wordBoxes}}}
         return ,$lines
     } finally {if($null -ne $bitmap){$bitmap.Dispose()};$stream.Dispose()}
 }

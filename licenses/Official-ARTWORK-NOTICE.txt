@@ -1,0 +1,1 @@
+角色背景来自《崩坏：星穹铁道》官方网站 https://sr.mihoyo.com/main?nav=character 。角色美术版权归米哈游及相关权利人，独立于本项目代码的 AGPL 许可。各图原始地址、内容编号、校验值见 source/backgrounds/credits.json。仅为非商业同人辅助工具界面装饰，未取得游戏官方授权或背书。

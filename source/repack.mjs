@@ -5,6 +5,7 @@ import {fileURLToPath} from 'node:url';
 const base=path.dirname(fileURLToPath(import.meta.url));
 const read=name=>fs.readFileSync(path.join(base,name),'utf8');
 const safe=s=>s.replace(/<\/script/gi,'<\\/script');
-let html=read('index.template.html').replace('/*STYLE*/',read('style.css')).replace('/*DATA*/','globalThis.HSRData='+read('data.json')+';').replace('/*CORE*/',safe(read('fribbels-core.js'))).replace('/*ENGINE*/',safe(read('engine.js'))).replace('/*APP*/',safe(read('app.js')));
+const backgrounds=JSON.parse(read('backgrounds/credits.json')).images.map(a=>({id:a.id,name:a.name,src:'data:image/webp;base64,'+fs.readFileSync(path.join(base,'backgrounds',a.id+'.webp')).toString('base64')}));
+let html=read('index.template.html').replace('/*STYLE*/',read('style.css')).replace('/*DATA*/','globalThis.HSRData='+read('data.json')+';globalThis.HSRBackgroundData='+JSON.stringify(backgrounds)+';').replace('/*CORE*/',safe(read('fribbels-core.js'))).replace('/*ENGINE*/',safe(read('engine.js'))).replace('/*APP*/',safe(read('background.js')+'\n'+read('upgrade-flow.js')+'\n'+read('app.js')));
 fs.writeFileSync(path.join(base,'../星铁遗器整理助手.html'),html);
 console.log('已重新生成界面文件。');
