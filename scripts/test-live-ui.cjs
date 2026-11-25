@@ -1,0 +1,43 @@
+// Optional browser integration test. All game-action endpoints are intercepted.
+// Start server.ps1 with an empty, separate DataRoot. Requires Playwright.
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const {chromium}=require(process.env.HSR_PLAYWRIGHT_MODULE||'playwright');
+const root=path.resolve(__dirname,'..'),origin=process.env.HSR_TEST_ORIGIN||'http://127.0.0.1:3255';
+(async()=>{
+ const browser=await chromium.launch({headless:true,...(process.env.HSR_CHROME?{executablePath:process.env.HSR_CHROME}:{})});
+ try{
+  const page=await browser.newPage({viewport:{width:1000,height:740}}),errors=[],external=[];
+  page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/^https?:/.test(r.url())&&!r.url().startsWith(origin+'/'))external.push(r.url());});
+  let active=false,finished=false,stopped=false,index=0,mode='normal',queue=[],answers=[],starts=[],stops=0;
+  await page.route('**/api/**',async route=>{
+   const p=new URL(route.request().url()).pathname,body=()=>route.request().postDataJSON(),reply=json=>route.fulfill({json});
+   if(p==='/api/capture/latest')return reply({state:'empty'});
+   if(p==='/api/live/start'){starts.push(body());active=true;finished=false;stopped=false;index=0;answers=[];return reply({kind:'live',state:'starting'});}
+   if(p==='/api/marker/status')return reply(!active?{state:'idle'}:stopped?{kind:'live',state:'stopped',message:'已停止'}:index<queue.length?{kind:'live',state:'awaitingScore',request:queue[index],scanned:index+1,inventoryCount:queue.length}:finished?{kind:'live',state:mode==='normal'?'partial':'complete',message:'测试结束',preview:mode==='preview'}:{kind:'live',state:'running'});
+   if(p==='/api/live/decision'){answers.push(body());index++;if(index===queue.length)finished=true;return reply({state:'accepted'});}
+   if(p==='/api/marker/stop'){stops++;stopped=true;return reply({state:'stopped',message:'已停止'});}
+   if(p==='/api/live/snapshot')return reply(!answers.length?{state:'empty'}:{state:'partial',data:{source:'synthetic integration',relics:answers.filter(a=>a.raw).map(a=>a.raw),metadata:{screenRead:true,partial:true,inventoryCount:queue.length,unrecognized:answers.filter(a=>a.raw&&!a.verified).length}}});
+   if(route.request().method()==='POST')throw Error('Unmocked action blocked: '+p);
+   return route.continue();
+  });
+  await page.goto(origin);await page.waitForFunction(()=>!!globalThis.RelicDesk);
+  assert.equal(await page.locator('#markBtn').isEnabled(),true);
+  const fixtures=await page.evaluate(async()=>{const E=RelicEngine,d=E.demo(),result=await E.analyze(d,E.DEFAULTS),display=(s,v)=>['HP','ATK','DEF','SPD'].includes(s)?Math.floor(v+1e-5):Math.floor(v*10+1e-5)/10;const raw=r=>({...r.raw,mainstat_value:display(r.main.stat,r.main.value),substats:r.substats.map(s=>({key:s.stat,value:display(s.stat,s.value)})),lock:false,location:'',discard:false});return{low:raw(result.rows.find(r=>r.enhance===15&&r.status==='discard')),high:raw(result.rows.find(r=>r.enhance===15&&r.status==='keep'))};});
+  const request=(raw,n)=>({requestId:String(n).padStart(32,'0'),relicId:'synthetic-'+n,observation:raw});
+  queue=[request(fixtures.low,1),{...request(fixtures.low,7),intent:'verify-before'},{...request({...fixtures.low,discard:true},8),intent:'verify-after'},request({...fixtures.low,lock:true,location:'equipped'},2),request({...fixtures.low,mainstat_value:1},3),request(fixtures.high,4)];
+  await page.locator('#markBtn').click();await page.waitForFunction(()=>document.getElementById('phase').textContent==='部分未识别'&&!document.getElementById('markBtn').disabled);
+  assert.equal(starts[0].previewOnly,false);assert.deepEqual(answers.map(a=>a.action),['markDiscard','markDiscard','skip','skip','skip','keep']);assert.equal(answers[4].verified,false);assert.ok(answers[1].observation&&answers[2].observation);assert.equal(answers[1].raw,undefined);assert.equal(answers[2].row,undefined);assert.equal(await page.locator('#total').innerText(),'3');assert.match(await page.locator('#coverage').innerText(),/无评分 1 件.*部分背包/);assert.equal(await page.locator('#markBtn').isEnabled(),true);
+  mode='preview';queue=[request(fixtures.low,5)];await page.locator('#captureBtn').click();await page.waitForFunction(()=>document.getElementById('phase').textContent==='已完成');assert.equal(starts[1].previewOnly,true);
+  mode='stop';queue=[request(fixtures.low,6)];await page.evaluate(()=>{const score=LiveFlow.score;LiveFlow.score=async(...a)=>{await new Promise(r=>setTimeout(r,1000));return score(...a);};});
+  await page.locator('#markBtn').click();await page.waitForFunction(()=>document.getElementById('phase').textContent==='正在操作游戏');await page.locator('#stopBtn').click();await page.waitForFunction(()=>document.getElementById('phase').textContent==='已停止');assert.equal(stops,1);assert.equal(answers.length,0);await page.waitForFunction(()=>!document.getElementById('markBtn').disabled);
+  // Offline numeric OCR uses generated pixels, never the player's inventory.
+  const numeric=await page.evaluate(async()=>{const images=['+15','705','55','6','5.1%','16'].map(text=>{const c=document.createElement('canvas');c.width=260;c.height=120;const g=c.getContext('2d');g.fillStyle='white';g.fillRect(0,0,260,120);g.fillStyle='black';g.font='bold 48px Arial';g.fillText(text,30,80);return c.toDataURL();});return NumericOcr.resolve({mainstat:'HP',substats:[{key:'ATK'},{key:'SPD'},{key:'CRIT DMG'},{key:'DEF'}],preview_substats:[],numericImages:images});});
+  assert.equal(numeric.level,15);assert.equal(numeric.mainstat_value,705);assert.deepEqual(numeric.substats.map(s=>s.value),[55,6,5.1,16]);
+  for(const fixture of JSON.parse(fs.readFileSync(path.join(root,'scripts/fixtures/numeric.json'),'utf8'))){const r=await page.evaluate(raw=>NumericOcr.resolve(raw),fixture.input);assert.equal(r.level,fixture.expected.level,fixture.name);assert.equal(r.mainstat_value,fixture.expected.main,fixture.name);assert.deepEqual(r.substats.map(s=>s.value),fixture.expected.active,fixture.name);assert.deepEqual(r.preview_substats.map(s=>s.value),fixture.expected.preview,fixture.name);}
+  await page.evaluate(()=>document.getElementById('demoBtn').click());await page.waitForFunction(()=>RelicDesk.result?.rows.length===112);await page.locator('#detailsBtn').click();
+  async function sorted(column,descending){const ns=await page.locator('#detailRows tr').evaluateAll((rs,c)=>rs.map(r=>Number(r.cells[c].textContent)).filter(Number.isFinite),column);assert.ok(ns.length>50);assert.ok(ns.every((v,i)=>!i||(descending?ns[i-1]>=v:ns[i-1]<=v)));}
+  await sorted(2,true);await page.locator('#sort-average').click();await sorted(3,true);await page.locator('#sort-average').click();await sorted(3,false);await page.locator('#sort-best').click();await sorted(4,true);
+  await page.screenshot({path:path.join(root,'docs/sorting.png')});await page.locator('#closeDialog').click();await page.screenshot({path:path.join(root,'docs/preview.png')});await page.setViewportSize({width:780,height:620});assert.equal(await page.locator('#stopBtn').evaluate(el=>el.getBoundingClientRect().bottom<=innerHeight),true);
+  assert.deepEqual(errors,[]);assert.deepEqual(external,[]);console.log('Live UI passed: start without login, protected/low/high/invalid decisions, preview, stop during scoring, local OCR, three sort keys and responsive layout. Game actions and external requests: 0.');
+ }finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exit(1)});

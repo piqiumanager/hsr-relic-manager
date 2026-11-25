@@ -61,7 +61,7 @@ globalThis.RelicEngine = (() => {
     const relics=source.map((x,i)=>x&&typeof x==='object'?normalize(x,i):null).filter(r=>r?.grade===5);
     const count=new Map();for(const r of relics)count.set(r.id,(count.get(r.id)||0)+1);
     for(const r of relics)if(count.get(r.id)>1)r.issues.push('遗器 ID 重复');
-    const owned=list(root.characters).map(c=>{const id=String(c.id??c.form?.characterId??c.characterId??'');return D.profiles[id+'b1']&&(c.ability_version==null||Number(c.ability_version)>0)?id+'b1':id;}).filter(Boolean);
+    const owned=list(root.characters).filter(c=>c&&typeof c==='object').map(c=>{const id=String(c.id??c.form?.characterId??c.characterId??'');return D.profiles[id+'b1']&&(c.ability_version==null||Number(c.ability_version)>0)?id+'b1':id;}).filter(Boolean);
     const rosterUnknown=owned.filter(id=>!D.charNames[id]);
     return {root,relics,owned,rosterUnknown,ignored,source:String(root.source||'Fribbels / JSON'),uid:String(root.metadata?.uid??''),isDemo:root.demo===true||root.metadata?.demo===true||String(root.source||'').includes('示例背包')};
   }

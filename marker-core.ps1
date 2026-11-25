@@ -15,6 +15,7 @@ function Get-DisplayValue([string]$Stat,[double]$Value) {
 }
 function Get-StatObservation([string]$Text) {
     $t=Normalize-MarkerText $Text
+    $t=$t -replace '[（(][^）)]*[）)]',''
     $keys=@($script:MarkerStatNames.Keys | Sort-Object { $script:MarkerStatNames[$_].Length } -Descending)
     foreach($key in $keys) {
         $label=$script:MarkerStatNames[$key]
@@ -106,7 +107,20 @@ function Wait-MarkerWinRT($Operation,[Type]$ResultType) {
     if(-not $task.Wait(15000)){throw '本机 OCR 等待超时，已停止。'}
     return $task.Result
 }
+function Merge-MarkerOcrLines($Lines){
+    $rows=New-Object 'Collections.Generic.List[object]'
+    foreach($word in @($Lines|ForEach-Object{$_.words}|Sort-Object @{Expression={$_.y+$_.height/2}},@{Expression={$_.x}})){
+        $cy=$word.y+$word.height/2;$row=$null
+        foreach($candidate in $rows){$overlap=[Math]::Min($candidate.bottom,$word.y+$word.height)-[Math]::Max($candidate.top,$word.y);if($overlap-ge[Math]::Min($candidate.height,$word.height)*.3){$row=$candidate;break}}
+        if(-not$row){$row=@{cy=$cy;height=$word.height;top=$word.y;bottom=$word.y+$word.height;words=(New-Object 'Collections.Generic.List[object]')};$rows.Add($row)}
+        $row.words.Add($word)
+        $row.top=[Math]::Min($row.top,$word.y);$row.bottom=[Math]::Max($row.bottom,$word.y+$word.height)
+    }
+    $result=@();foreach($row in $rows){$words=@($row.words|Sort-Object @{Expression={$_.x}});$left=($words.x|Measure-Object -Minimum).Minimum;$top=($words.y|Measure-Object -Minimum).Minimum;$right=($words|ForEach-Object{$_.x+$_.width}|Measure-Object -Maximum).Maximum;$bottom=($words|ForEach-Object{$_.y+$_.height}|Measure-Object -Maximum).Maximum;$result+=,@{text=($words.text-join' ');x=$left;y=$top;width=$right-$left;height=$bottom-$top;words=$words}}
+    return ,@($result|Sort-Object @{Expression={$_.y}})
+}
 function Read-MarkerOcr([string]$File) {
+    $File=[IO.Path]::GetFullPath($File)
     $storage=Wait-MarkerWinRT ([Windows.Storage.StorageFile]::GetFileFromPathAsync($File)) ([Windows.Storage.StorageFile])
     $stream=Wait-MarkerWinRT ($storage.OpenAsync([Windows.Storage.FileAccessMode]::Read)) ([Windows.Storage.Streams.IRandomAccessStream])
     $bitmap=$null
@@ -115,6 +129,6 @@ function Read-MarkerOcr([string]$File) {
         $bitmap=Wait-MarkerWinRT ($decoder.GetSoftwareBitmapAsync()) ([Windows.Graphics.Imaging.SoftwareBitmap])
         $recognition=Wait-MarkerWinRT ($script:MarkerOcr.RecognizeAsync($bitmap)) ([Windows.Media.Ocr.OcrResult])
         $lines=@();foreach($line in $recognition.Lines){$words=@($line.Words);if($words.Count){$x=($words|ForEach-Object{$_.BoundingRect.X}|Measure-Object -Minimum).Minimum;$y=($words|ForEach-Object{$_.BoundingRect.Y}|Measure-Object -Minimum).Minimum;$right=($words|ForEach-Object{$_.BoundingRect.X+$_.BoundingRect.Width}|Measure-Object -Maximum).Maximum;$bottom=($words|ForEach-Object{$_.BoundingRect.Y+$_.BoundingRect.Height}|Measure-Object -Maximum).Maximum;$wordBoxes=@($words|ForEach-Object{@{text=$_.Text;x=[double]$_.BoundingRect.X;y=[double]$_.BoundingRect.Y;width=[double]$_.BoundingRect.Width;height=[double]$_.BoundingRect.Height}});$lines+=,@{text=$line.Text;x=[double]$x;y=[double]$y;width=[double]($right-$x);height=[double]($bottom-$y);words=$wordBoxes}}}
-        return ,$lines
+        return ,(Merge-MarkerOcrLines $lines)
     } finally {if($null -ne $bitmap){$bitmap.Dispose()};$stream.Dispose()}
 }

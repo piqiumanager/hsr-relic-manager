@@ -218,4 +218,4 @@ try{
       if(-not$mutated){if($state.processed-lt$state.total){Save-State 'partial' ('仍有 '+($state.total-$state.processed)+' 件胚子未匹配，已保留不动。');exit 0};break}
     }
     Save-State 'complete' $(if($PreviewOnly){'强化预览完成，未消耗材料。'}else{'强化完成，低分已标记弃置。请自行确认分解。'})
-}catch [OperationCanceledException]{Save-State 'stopped' $_.Exception.Message}catch{Save-State 'failed' $_.Exception.Message;exit 1}
+}catch [OperationCanceledException]{Save-State 'stopped' $_.Exception.GetBaseException().Message}catch{$failure=$_.Exception.GetBaseException();if($failure-is[OperationCanceledException]){Save-State 'stopped' $failure.Message}else{Save-State 'failed' $failure.Message;exit 1}}

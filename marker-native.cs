@@ -45,11 +45,27 @@ public static class RelicNative {
     return new RelicWindow {Handle=h,X=pt.X,Y=pt.Y,Width=r.R,Height=r.B,ProcessId=process.Id};
   }
   public static void Activate(RelicWindow w) {
-    ShowWindow(w.Handle,9);SetForegroundWindow(w.Handle);Thread.Sleep(500);
-    if(GetForegroundWindow()!=w.Handle){uint current=GetCurrentThreadId(),foreground=GetWindowThreadProcessId(GetForegroundWindow(),IntPtr.Zero);bool attached=false;
-      try{if(foreground!=current)attached=AttachThreadInput(current,foreground,true);SetForegroundWindow(w.Handle);}finally{if(attached)AttachThreadInput(current,foreground,false);}Thread.Sleep(500);
+    if(IsIconic(w.Handle))ShowWindow(w.Handle,9);
+    var deadline=DateTime.UtcNow.AddSeconds(25);
+    while(GetForegroundWindow()!=w.Handle&&DateTime.UtcNow<deadline){
+      if(StopPressed())throw new OperationCanceledException("已按 F8 停止。");
+      SetForegroundWindow(w.Handle);
+      uint current=GetCurrentThreadId(),foreground=GetWindowThreadProcessId(GetForegroundWindow(),IntPtr.Zero);bool attached=false;
+      try{if(foreground!=0&&foreground!=current)attached=AttachThreadInput(current,foreground,true);SetForegroundWindow(w.Handle);}finally{if(attached)AttachThreadInput(current,foreground,false);}
+      Thread.Sleep(250);
     }
+    if(GetForegroundWindow()!=w.Handle)throw new Exception("Windows 暂未允许切换到游戏。请点击一次游戏窗口，再开始标记。");
+    Thread.Sleep(350);
     Guard(w);
+  }
+  public static bool FiveStarPanel(Bitmap b){int gold=0;for(int y=0;y<b.Height;y+=3)for(int x=0;x<b.Width;x+=3){var p=b.GetPixel(x,y);if(p.R>100&&p.G>65&&p.R>p.G*1.1&&p.G>p.B*1.1)gold++;}return gold>Math.Ceiling(b.Width/3.0)*Math.Ceiling(b.Height/3.0)*.35;}
+  public static Bitmap NumericOcrImage(Bitmap b,int threshold){
+    double low=0,high=255;
+    if(threshold<0){var lightness=new double[b.Width*b.Height];for(int y=0;y<b.Height;y++)for(int x=0;x<b.Width;x++){var p=b.GetPixel(x,y);lightness[y*b.Width+x]=.2126*p.R+.7152*p.G+.0722*p.B;}Array.Sort(lightness);low=lightness[(int)(lightness.Length*.25)];high=lightness[Math.Min(lightness.Length-1,(int)(lightness.Length*.997))];}
+    using(var mask=new Bitmap(b.Width,b.Height,PixelFormat.Format32bppArgb)){
+      for(int y=0;y<b.Height;y++)for(int x=0;x<b.Width;x++){var p=b.GetPixel(x,y);double light=.2126*p.R+.7152*p.G+.0722*p.B;int value=threshold<0?(high-low<20?255:255-(int)Math.Max(0,Math.Min(255,(light-low)*255/(high-low)))):(light>threshold?0:255);mask.SetPixel(x,y,Color.FromArgb(value,value,value));}
+      var output=new Bitmap(b.Width*3+60,b.Height*3+60,PixelFormat.Format32bppArgb);using(var g=Graphics.FromImage(output)){g.Clear(Color.White);g.InterpolationMode=System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;g.DrawImage(mask,new Rectangle(30,30,b.Width*3,b.Height*3));}return output;
+    }
   }
   public static void TapNavigation(RelicWindow w,string key) {
     Guard(w);ushort vk;
@@ -61,6 +77,30 @@ public static class RelicNative {
     int white=0,dark=0,gold=0,total=b.Width*b.Height;
     for(int y=0;y<b.Height;y++)for(int x=0;x<b.Width;x++){var p=b.GetPixel(x,y);if(p.R>220&&p.G>220&&p.B>220)white++;if(p.R<80&&p.G<80&&p.B<80)dark++;if(p.R>145&&p.G>105&&p.B<120)gold++;}
     return (double)white/total>0.3&&(double)dark/total>0.02&&(double)gold/total<0.1;
+  }
+  public static int LockState(Bitmap b){
+    if(ClearlyUnlocked(b))return 0;
+    int white=0,gold=0,dark=0,total=b.Width*b.Height;
+    for(int y=0;y<b.Height;y++)for(int x=0;x<b.Width;x++){var p=b.GetPixel(x,y);if(p.R>220&&p.G>220&&p.B>220)white++;if(p.R>145&&p.G>105&&p.B<120)gold++;if(p.R<80&&p.G<80&&p.B<80)dark++;}
+    return gold>=total*.45&&white>=total*.05&&dark<=total*.03?1:-1;
+  }
+  static double MedianEdge(Bitmap b,int y,int left,int right){
+    var values=new double[right-left];for(int x=left;x<right;x++){var a=b.GetPixel(x,y);var c=b.GetPixel(x,y+1);values[x-left]=(Math.Abs(a.R-c.R)+Math.Abs(a.G-c.G)+Math.Abs(a.B-c.B))/3.0;}
+    Array.Sort(values);return values[values.Length/2];
+  }
+  // Based on HSR-Scanner's equipped_frame_present (GPL-3.0); search the footer
+  // border pair, independent of character portraits and unreliable label OCR.
+  public static int EquippedFooterState(Bitmap panel){
+    if(panel.Width<440||panel.Height<850)throw new Exception("装备状态区域不完整。");
+    int first=(int)(panel.Height*.78),last=(int)(panel.Height*.86);bool uncertain=false;
+    for(int y=first;y<last;y++){
+      double top=Math.Min(MedianEdge(panel,y,30,130),MedianEdge(panel,y,340,430));if(top<26)continue;
+      for(int next=y+25;next<Math.Min(y+60,panel.Height-1);next++){
+        double bottom=Math.Min(MedianEdge(panel,next,30,130),MedianEdge(panel,next,340,430));
+        if(top>=32&&bottom>=32)return 1;if(bottom>=26)uncertain=true;
+      }
+    }
+    return uncertain?-1:0;
   }
   public static void Guard(RelicWindow w) {
     if(StopPressed())throw new OperationCanceledException("已按 F8 停止。");

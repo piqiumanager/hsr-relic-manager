@@ -33,7 +33,7 @@ const first=JSON.parse(fs.readFileSync(path.join(root,'work/upgrade-request-fixt
   assert.equal(await page.evaluate(()=>HSRBackgroundData.length),6);assert.equal(await page.locator('#characterBackground').evaluate(el=>Number(getComputedStyle(el).opacity)),.18);
   await page.locator('#upgradeModeBtn').click();assert.equal(await page.locator('#markBtn').innerText(),'开始强化');
   assert.match(await page.locator('#rulesSummary').innerText(),/80/);
-  await page.locator('#captureBtn').click();await page.waitForFunction(()=>!document.getElementById('markBtn').disabled);
+  await page.evaluate(async snapshot=>{await RelicDesk.loadFile(new File([JSON.stringify(snapshot)],'synthetic.json',{type:'application/json'}));RelicDesk.imported.captureId='synthetic-capture';document.getElementById('mode').dispatchEvent(new Event('change'));},snapshot);await page.waitForFunction(()=>!document.getElementById('markBtn').disabled);
   await page.screenshot({path:path.join(root,'work/upgrade-ui-ready.png')});
   await page.locator('#markBtn').click();await page.waitForFunction(()=>document.getElementById('phase').textContent==='已完成');
   assert.equal(startBody.plan.operation,'upgrade');assert.equal(startBody.plan.policy.maxRelicMaterialRarity,4);assert.equal(startBody.previewOnly,false);

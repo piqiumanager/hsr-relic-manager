@@ -18,7 +18,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: publish-v1.4.0
+  group: publish-v1.5.0
   cancel-in-progress: false
 
 jobs:
@@ -28,10 +28,13 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
-      RELEASE_TAG: v1.4.0
+      RELEASE_TAG: v1.5.0
     steps:
       - name: Check out exact source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Prepare pinned offline OCR data
+        shell: powershell
+        run: ./scripts/prepare-ocr.ps1
       - name: Verify scoring and cleanup plans
         shell: pwsh
         run: |
@@ -45,6 +48,16 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Live enhancement scoring tests failed' }
           node scripts/test-background.cjs
           if ($LASTEXITCODE -ne 0) { throw 'Bundled background tests failed' }
+          node scripts/test-live-flow.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Live screen scoring tests failed' }
+          node scripts/test-ocr-assets.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Offline OCR assets failed verification' }
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-live-core.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Live screen parser tests failed' }
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-live-executor.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Live worker function tests failed' }
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-live-bridge.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Live API tests failed' }
           powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-upgrade-core.ps1
           if ($LASTEXITCODE -ne 0) { throw 'Enhancement executor tests failed' }
           powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-upgrade-bridge.ps1
@@ -68,10 +81,10 @@ jobs:
         run: |
           gh release view $env:RELEASE_TAG 2>$null | Out-Null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $env:RELEASE_TAG --target $env:GITHUB_SHA --prerelease --title 'v1.4.0 · 自动强化与简洁界面（测试版）' --notes-file docs/RELEASE_NOTES.md
+            gh release create $env:RELEASE_TAG --target $env:GITHUB_SHA --prerelease --title 'v1.5.0 · 免重登标记与评分排序（测试版）' --notes-file docs/RELEASE_NOTES.md
             if ($LASTEXITCODE -ne 0) { throw 'Release creation failed' }
           }
-          gh release upload $env:RELEASE_TAG 'dist/hsr-relic-manager-v1.4.0-windows.zip' 'dist/hsr-relic-manager-v1.4.0.exe' 'dist/SHA256SUMS.txt' --clobber
+          gh release upload $env:RELEASE_TAG 'dist/hsr-relic-manager-v1.5.0-windows.zip' 'dist/hsr-relic-manager-v1.5.0.exe' 'dist/SHA256SUMS.txt' --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Asset upload failed' }
           $assets = gh release view $env:RELEASE_TAG --json assets --jq '.assets[].name'
           if ($assets -contains 'default.exe') {

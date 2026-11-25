@@ -86,4 +86,4 @@ try{
       $remaining=[int](($pending.Values|Measure-Object -Sum).Sum);$state.remaining=$remaining
       if($remaining-gt 0){Save-State 'partial' ('遍历结束，仍有 '+$remaining+' 件候选未能确认，已保留不动；没有执行分解。')}else{Save-State 'complete' $(if($PreviewOnly){'识别预览完成，没有修改遗器。'}else{'标记完成，请在游戏中检查弃置列表并自行确认分解。'})}
     }finally{foreach($resource in @($anchor,$reference,$unlocked,$previousGrid)){if($resource){$resource.Dispose()}}}
-}catch [OperationCanceledException]{Save-State 'stopped' $_.Exception.Message}catch{Save-State 'failed' $_.Exception.Message;exit 1}
+}catch [OperationCanceledException]{Save-State 'stopped' $_.Exception.GetBaseException().Message}catch{$failure=$_.Exception.GetBaseException();if($failure-is[OperationCanceledException]){Save-State 'stopped' $failure.Message}else{Save-State 'failed' $failure.Message;exit 1}}

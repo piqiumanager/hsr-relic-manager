@@ -8,10 +8,11 @@
       "src/config/screenshot.py",
       "src/config/relic_scan.py",
       "src/services/scanner/scanner.py",
-      "src/services/scanner/parsers/relic_strategy.py"
+      "src/services/scanner/parsers/relic_strategy.py",
+      "src/utils/avatar_matching.py"
     ],
     "license": "GPL-3.0",
-    "modifications": "Converted proportions and snake navigation to guarded PowerShell/C# implementation. Added exact snapshot matching and explicit discard transition confirmation."
+    "modifications": "Converted proportions and snake navigation to guarded PowerShell/C# implementation. Adapted median footer-border detection to the enlarged detail-panel crop; uncertain results are protected. Added pre/post-click semantic attribute checks and explicit discard transition confirmation."
   },
   "march7": {
     "repo": "moesnow/March7thAssistant",

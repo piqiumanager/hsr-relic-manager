@@ -1,4 +1,4 @@
-﻿param([switch]$NoBrowser, [int]$Port = 0, [string]$DataRoot = '')
+﻿param([switch]$NoBrowser, [int]$Port = 0, [string]$DataRoot = '',[ValidateRange(0,5)][int]$ValidationMarks=0)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Web
 $base = $PSScriptRoot
@@ -15,6 +15,9 @@ $markerJob = $null
 $stopRequested = $false
 $lastRequest = Get-Date
 . (Join-Path $base 'upgrade-core.ps1')
+. (Join-Path $base 'marker-core.ps1')
+. (Join-Path $base 'live-core.ps1')
+. (Join-Path $base 'live-server.ps1')
 $releaseUrl = 'https://github.com/IceDynamix/reliquary-archiver/releases/download/v0.20.0/reliquary-archiver-pktmon-x64.exe'
 $expectedHash = 'ce4a5bb00ba0c3d681772d9151ac2332934dd1b497926c3d7994f40c2a94cd9d'
 
@@ -29,6 +32,12 @@ function Send-Response($stream, [int]$status, [string]$content, [string]$content
 }
 
 function Json($obj) { return ConvertTo-Json -InputObject $obj -Depth 40 -Compress }
+function Send-OcrAsset($stream,[string]$Route){
+    $name=$Route.Substring(5)
+    if($name-notin @('tesseract.min.js','worker.min.js','tesseract-core-lstm.js','tesseract-core-lstm.wasm','eng.traineddata')){Send-Response $stream 404 (Json @{error='资源不存在'});return}
+    $bytes=[IO.File]::ReadAllBytes((Join-Path $base ('source/ocr/'+$name)));$mime=if($name.EndsWith('.js')){'application/javascript'}elseif($name.EndsWith('.wasm')){'application/wasm'}else{'application/octet-stream'}
+    $header=[Text.Encoding]::ASCII.GetBytes("HTTP/1.1 200 OK`r`nContent-Type: $mime`r`nContent-Length: $($bytes.Length)`r`nConnection: close`r`nCache-Control: private, max-age=86400`r`nX-Content-Type-Options: nosniff`r`n`r`n");$stream.Write($header,0,$header.Length);$stream.Write($bytes,0,$bytes.Length);$stream.Flush()
+}
 
 function Read-LocalRequest($stream) {
     $headerBytes=New-Object IO.MemoryStream
@@ -57,6 +66,11 @@ function Assert-MarkerIdle {
     $state=Get-MarkerStatus
     if($state.state -in @('running','starting','calibrating','awaitingScore')){throw '标记或校准正在进行，请先停止当前任务。'}
 }
+function Start-GameWorker([string]$Arguments){
+    $identity=[Security.Principal.WindowsIdentity]::GetCurrent();$principal=New-Object Security.Principal.WindowsPrincipal($identity)
+    if($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){return Start-Process -FilePath 'powershell.exe' -ArgumentList $Arguments -WindowStyle Hidden -PassThru}
+    return Start-Process -FilePath 'powershell.exe' -ArgumentList $Arguments -Verb RunAs -WindowStyle Hidden -PassThru
+}
 
 function Start-MarkerWorker([string]$Mode,$Plan,[bool]$Preview) {
     if($Mode -notin @('Run','Upgrade')){throw '本版本自动定位，不再需要手动校准。'}
@@ -71,7 +85,7 @@ function Start-MarkerWorker([string]$Mode,$Plan,[bool]$Preview) {
         [IO.File]::WriteAllText($planFile,(ConvertTo-Json $Plan -Depth 40 -Compress),$utf8)
         $args+=' -PlanPath "'+$planFile+'"';if($Preview){$args+=' -PreviewOnly'}
     }
-    $process=Start-Process -FilePath 'powershell.exe' -ArgumentList $args -Verb RunAs -WindowStyle Hidden -PassThru
+    $process=Start-GameWorker $args
     $script:markerJob=@{id=$jobId;directory=$dir;process=$process;started=Get-Date;kind=$(if($Mode -eq 'Upgrade'){'upgrade'}else{'marker'})}
     return @{state='starting';jobId=$jobId;message='已启动，请按游戏内提示操作。'}
 }
@@ -238,6 +252,8 @@ try {
                 Send-Response $stream 200 $html 'text/html; charset=utf-8'
             } elseif ($route -eq '/favicon.ico') {
                 Send-Response $stream 204 ''
+            } elseif ($route.StartsWith('/ocr/') -and $method -eq 'GET') {
+                Send-OcrAsset $stream $route
             } elseif ($route.StartsWith('/api/')) {
                 if ($headers['x-relic-token'] -ne $token -or ($headers['origin'] -and $headers['origin'] -ne $origin)) {
                     Send-Response $stream 403 (Json @{error='请求校验失败，请从本机工具页面重试。'})
@@ -252,6 +268,12 @@ try {
                     else{Send-Response $stream 200 (Json @{state='empty'})}
                 } elseif ($route -eq '/api/marker/status' -and $method -eq 'GET') {
                     Send-Response $stream 200 (Json (Get-MarkerStatus))
+                } elseif ($route -eq '/api/live/start' -and $method -eq 'POST') {
+                    try{Send-Response $stream 200 (Json (Start-LiveWorker (ConvertFrom-Json $request.body)))}catch{Send-Response $stream 400 (Json @{error=$_.Exception.GetBaseException().Message})}
+                } elseif ($route -eq '/api/live/decision' -and $method -eq 'POST') {
+                    try{Send-Response $stream 200 (Json (Accept-LiveDecision (ConvertFrom-Json $request.body)))}catch{Send-Response $stream 400 (Json @{error=$_.Exception.Message})}
+                } elseif ($route -eq '/api/live/snapshot' -and $method -eq 'GET') {
+                    try{Send-Response $stream 200 (Get-LiveSnapshot)}catch{Send-Response $stream 400 (Json @{error=$_.Exception.Message})}
                 } elseif ($route -eq '/api/marker/calibrate' -and $method -eq 'POST') {
                     try{Send-Response $stream 200 (Json (Start-MarkerWorker 'Calibrate' $null $false))}catch{Send-Response $stream 400 (Json @{error=$_.Exception.Message})}
                 } elseif ($route -eq '/api/marker/start' -and $method -eq 'POST') {
@@ -266,7 +288,7 @@ try {
                     if($script:markerJob){[IO.File]::WriteAllText((Join-Path $script:markerJob.directory 'stop'),'stop',$utf8)}
                     Send-Response $stream 200 (Json @{state='stopping';message='已请求停止，脚本会在下一次输入前停下。'})
                 } elseif ($route -eq '/api/health' -and $method -eq 'GET') {
-                    Send-Response $stream 200 (Json @{state='ok';version='1.4';capture='Reliquary v0.20.0';scoring='Fribbels';marker='Chinese Windows OCR'})
+                    Send-Response $stream 200 (Json @{state='ok';version='1.5';capture='Reliquary v0.20.0';scoring='Fribbels';marker='Chinese Windows OCR'})
                 } elseif ($route -eq '/api/exit' -and $method -eq 'POST') {
                     Send-Response $stream 200 (Json @{state='closing'})
                     if($script:markerJob){[IO.File]::WriteAllText((Join-Path $script:markerJob.directory 'stop'),'stop',$utf8)}

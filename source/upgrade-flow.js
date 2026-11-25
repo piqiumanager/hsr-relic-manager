@@ -59,7 +59,7 @@ globalThis.UpgradeFlow=(()=>{
   const main=C.MainStatsValues[o.main.stat]?.[5];const value=main?main.base+main.increment*o.enhance:NaN;const visible=['HP','ATK','DEF','SPD'].includes(o.main.stat)?Math.floor(value+0.00001):Math.floor(value*10+0.00001)/10;
   if(!Number.isFinite(o.main.value)||Math.abs(o.main.value-visible)>0.011)throw Error('强化后主属性数值与等级不一致');
   let lower,upper,character;
-  if(request.initial){const v=c.initialScores;lower=Math.min(...v.map(s=>s.average));upper=Math.max(...v.map(s=>s.average));}
+  if(request.initial&&o.enhance===0){const v=c.initialScores;lower=Math.min(...v.map(s=>s.average));upper=Math.max(...v.map(s=>s.average));}
   else{
    if(!Array.isArray(o.substats)||o.substats.length!==4||new Set(o.substats.map(s=>s.stat)).size!==4||o.substats.some(s=>s.stat===o.main.stat))throw Error('强化后四个副属性未完整识别');
    const ranges=o.substats.map(s=>possibleValues(s.stat,s.value,o.enhance));

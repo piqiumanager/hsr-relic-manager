@@ -1,0 +1,3 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),crypto=require('node:crypto');const dir=path.resolve(__dirname,'../source/ocr'),manifest=JSON.parse(fs.readFileSync(path.join(dir,'PROVENANCE.json'),'utf8'));
+for(const f of manifest.files){const b=fs.readFileSync(path.join(dir,f.name));assert.equal(b.length,f.bytes);assert.equal(crypto.createHash('sha256').update(b).digest('hex'),f.sha256,f.name);}
+assert.equal(manifest.tesseract,'7.0.0');assert.equal(manifest.downloads.length,2);console.log('Offline OCR asset checksums passed: '+manifest.files.length);
