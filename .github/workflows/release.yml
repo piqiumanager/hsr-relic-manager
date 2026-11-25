@@ -10,6 +10,8 @@ on:
       - '*.cs'
       - '*.html'
       - 'licenses/**'
+      - 'scripts/**'
+      - '.gitattributes'
       - '.github/workflows/release.yml'
       - 'docs/RELEASE_NOTES.md'
   workflow_dispatch:
