@@ -39,6 +39,14 @@ function Send-OcrAsset($stream,[string]$Route){
     $header=[Text.Encoding]::ASCII.GetBytes("HTTP/1.1 200 OK`r`nContent-Type: $mime`r`nContent-Length: $($bytes.Length)`r`nConnection: close`r`nCache-Control: private, max-age=86400`r`nX-Content-Type-Options: nosniff`r`n`r`n");$stream.Write($header,0,$header.Length);$stream.Write($bytes,0,$bytes.Length);$stream.Flush()
 }
 
+function Send-BackgroundAsset($stream,[string]$Route){
+    $name=$Route.Substring('/source/backgrounds/'.Length)
+    if($name-notmatch'^[a-z0-9-]+\.webp$'){Send-Response $stream 404 (Json @{error='资源不存在'});return}
+    $credits=ConvertFrom-Json ([IO.File]::ReadAllText((Join-Path $base 'source/backgrounds/credits.json'),$utf8))
+    if($name-notin @($credits.images|ForEach-Object{$_.id+'.webp'})){Send-Response $stream 404 (Json @{error='资源不存在'});return}
+    $bytes=[IO.File]::ReadAllBytes((Join-Path $base ('source/backgrounds/'+$name)))
+    $header=[Text.Encoding]::ASCII.GetBytes("HTTP/1.1 200 OK`r`nContent-Type: image/webp`r`nContent-Length: $($bytes.Length)`r`nConnection: close`r`nCache-Control: private, max-age=86400`r`nX-Content-Type-Options: nosniff`r`n`r`n");$stream.Write($header,0,$header.Length);$stream.Write($bytes,0,$bytes.Length);$stream.Flush()
+}
 function Read-LocalRequest($stream) {
     $headerBytes=New-Object IO.MemoryStream
     $tail=0
@@ -254,6 +262,8 @@ try {
                 Send-Response $stream 204 ''
             } elseif ($route.StartsWith('/ocr/') -and $method -eq 'GET') {
                 Send-OcrAsset $stream $route
+            } elseif ($route.StartsWith('/source/backgrounds/') -and $method -eq 'GET') {
+                Send-BackgroundAsset $stream $route
             } elseif ($route.StartsWith('/api/')) {
                 if ($headers['x-relic-token'] -ne $token -or ($headers['origin'] -and $headers['origin'] -ne $origin)) {
                     Send-Response $stream 403 (Json @{error='请求校验失败，请从本机工具页面重试。'})
@@ -288,7 +298,7 @@ try {
                     if($script:markerJob){[IO.File]::WriteAllText((Join-Path $script:markerJob.directory 'stop'),'stop',$utf8)}
                     Send-Response $stream 200 (Json @{state='stopping';message='已请求停止，脚本会在下一次输入前停下。'})
                 } elseif ($route -eq '/api/health' -and $method -eq 'GET') {
-                    Send-Response $stream 200 (Json @{state='ok';version='1.5';capture='Reliquary v0.20.0';scoring='Fribbels';marker='Chinese Windows OCR'})
+                    Send-Response $stream 200 (Json @{state='ok';version='1.5.1';capture='Reliquary v0.20.0';scoring='Fribbels';marker='Chinese Windows OCR'})
                 } elseif ($route -eq '/api/exit' -and $method -eq 'POST') {
                     Send-Response $stream 200 (Json @{state='closing'})
                     if($script:markerJob){[IO.File]::WriteAllText((Join-Path $script:markerJob.directory 'stop'),'stop',$utf8)}

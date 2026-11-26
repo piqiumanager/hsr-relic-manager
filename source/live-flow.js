@@ -7,11 +7,14 @@ globalThis.LiveFlow=(()=>{
   if(Math.abs(r.mainstat_value-display(r.mainstat))>.011)throw Error('主属性数值与强化等级不一致');
   const variants=['low','high'].map(bound=>({...r,_uid:request.relicId,mainstat_value:actual,substats:r.substats.map(s=>({...s,value:U.possibleValues(s.key,s.value,r.level)[bound]})),preview_substats:(r.preview_substats||[]).map(s=>({...s,value:U.possibleValues(s.key,s.value,0)[bound]}))}));
   const imported=E.parse({source:'当前游戏画面',relics:[variants[1]],characters:request.characters||[]});
-  const cfg=E.settingsValid(settings);if(cfg.scope==='owned'&&!imported.owned.length)throw Error('现场读取没有角色持有信息，请选择全部已收录五星。');
+  const cfg=E.cleanupSettings(settings);if(cfg.scope==='owned'&&!imported.owned.length)throw Error('现场读取没有角色持有信息，请选择全部已收录五星。');
   const upper=await E.analyze(imported,cfg),lower=await E.analyze(E.parse({...imported.root,relics:[variants[0]]}),cfg),row=upper.rows[0];
   if(!row?.scores.length||row.scoringIssues.length)throw Error('当前属性未通过评分校验');
-  const answer={requestId:request.requestId,action:row.status==='discard'?'markDiscard':row.status==='review'?'skip':'keep',verified:true,observation:r,raw:variants[1],row:{...row,scoreBounds:{lower:lower.rows[0]?.best,upper:row.best}}};
-  if(r.lock!==false||r.location!==''||r.discard!==false)answer.action='skip';
+  const answer={requestId:request.requestId,action:r.level===15?'skip':row.status==='discard'?'markDiscard':row.status==='review'?'skip':'keep',verified:true,averagePotential:row.best.average,observation:r,raw:variants[1],row:{...row,scoreBounds:{lower:lower.rows[0]?.best,upper:row.best}},reason:r.level===15?'+15 跳过':row.reasons.join('；')};
+  answer.unlockFirst=r.lock===true&&answer.action==='markDiscard';
+  if(answer.unlockFirst)answer.reason='平均满级潜力低于 80，解锁后标记弃置';
+  if(typeof r.lock!=='boolean')answer.reason='锁定状态不明，跳过';else if(r.location!=='')answer.reason='已装备或装备状态不明，跳过';else if(r.discard!==false)answer.reason='已弃置或状态不明，跳过';
+  if(typeof r.lock!=='boolean'||r.location!==''||r.discard!==false){answer.action='skip';answer.unlockFirst=false;}
   return answer;
  }
  return{score};

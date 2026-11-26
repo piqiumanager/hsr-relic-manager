@@ -10,6 +10,7 @@ globalThis.RelicEngine = (() => {
     custom:{label:'自定义',current:75,average:70,best:85},
   };
   const DEFAULTS={preset:'extreme',current:75,average:70,best:85,scope:'all',selected:[],protectLocked:true,protectEquipped:true,considerReroll:false,keepSpeed:0,keepRare:false,reserve:0,overrides:{}};
+  function cleanupSettings(saved={}){return settingsValid({...saved,preset:'unfinished80',current:0,average:80,best:0,cleanupOnlyUnfinished:true,allowUnlockLowPotential:true,protectLocked:false,protectEquipped:true,considerReroll:false,keepSpeed:0,keepRare:false,reserve:0});}
   const aliases={'HP_':'HP%','ATK_':'ATK%','DEF_':'DEF%','CRIT Rate_':'CRIT Rate','CRIT DMG_':'CRIT DMG','Effect Hit Rate_':'Effect Hit Rate','Effect RES_':'Effect RES','Break Effect_':'Break Effect','Physical DMG Boost_':'Physical DMG Boost','Fire DMG Boost_':'Fire DMG Boost','Ice DMG Boost_':'Ice DMG Boost','Lightning DMG Boost_':'Lightning DMG Boost','Wind DMG Boost_':'Wind DMG Boost','Quantum DMG Boost_':'Quantum DMG Boost','Imaginary DMG Boost_':'Imaginary DMG Boost','Energy Regeneration Rate_':'Energy Regeneration Rate','Outgoing Healing Boost_':'Outgoing Healing Boost'};
   for(const [k,v]of Object.entries(STAT_ZH))aliases[v]=k;
   const stat=s=>aliases[String(s)]||String(s??'');
@@ -109,10 +110,11 @@ globalThis.RelicEngine = (() => {
       const qualifies=scores.filter(s=>r.enhance===15?s.current>=cfg.current:s.average>=cfg.average&&s.best>=cfg.best);
       if(qualifies.length)best=qualifies[0];
       let status='discard',reasons=[];
-      if(r.issues.length){status='review';reasons.push(...r.issues);}
+      if(cfg.cleanupOnlyUnfinished&&r.enhance===15){status='keep';reasons.push('+15 跳过，不参与清理');}
+      else if(r.issues.length){status='review';reasons.push(...r.issues);}
       else if(!scores.length){status='review';reasons.push('所选角色没有可用的评分权重');}
-      else if(qualifies.length){status=r.enhance===15?'keep':'upgrade';const q=qualifies[0];reasons.push(`${q.name}：${r.enhance===15?'当前 '+q.current.toFixed(1):'平均潜力 '+q.average.toFixed(1)+'，上限 '+q.best.toFixed(1)}`);}
-      else {reasons.push(r.enhance===15?`所有目标五星角色当前评分均低于 ${cfg.current}`:`没有目标五星角色同时达到平均 ${cfg.average}、上限 ${cfg.best}`);}
+      else if(qualifies.length){status=r.enhance===15?'keep':'upgrade';const q=qualifies[0];reasons.push(`${q.name}：${r.enhance===15?'当前 '+q.current.toFixed(1):'平均潜力 '+q.average.toFixed(1)+(cfg.cleanupOnlyUnfinished?'，达到 80':'，上限 '+q.best.toFixed(1))}`);}
+      else {reasons.push(cfg.cleanupOnlyUnfinished?'所有目标五星角色的平均满级潜力均低于 80':r.enhance===15?`所有目标五星角色当前评分均低于 ${cfg.current}`:`没有目标五星角色同时达到平均 ${cfg.average}、上限 ${cfg.best}`);}
       if(status==='discard'&&cfg.considerReroll&&r.enhance===15&&!r.substats.every(s=>s.rollsKnown)){status='review';reasons.push('缺少强化次数，无法准确计算重掷潜力');}
       if(status==='discard'&&cfg.considerReroll&&scores.some(s=>s.reroll>=cfg.average)){status='review';reasons.push('重掷潜力较高，单独复核');}
       if(status==='discard'&&cfg.keepSpeed>0&&r.substats.some(s=>s.stat==='SPD'&&s.value>=cfg.keepSpeed)){status='review';reasons.push('触发速度词条保护');}
@@ -181,5 +183,5 @@ globalThis.RelicEngine = (() => {
     if(!candidates.length)throw Error('没有可自动标记的候选：已锁定、已装备、状态不明或已弃置的遗器不会再次点击。');
     return {schema:'hsr-marker-plan-v1',captureId:imported.captureId,createdAt:new Date().toISOString(),candidates,inventoryCount:list(imported.root.relics).length,total:candidates.reduce((n,x)=>n+x.count,0),skips,allowSalvage:false};
   }
-  return{PARTS,STAT_ZH,PRESETS,DEFAULTS,parse,analyze,evaluate,metadata,targets,status,exportResults,demo,settingsValid,markerFingerprint,buildMarkPlan};
+  return{PARTS,STAT_ZH,PRESETS,DEFAULTS,parse,analyze,evaluate,metadata,targets,status,exportResults,demo,settingsValid,cleanupSettings,markerFingerprint,buildMarkPlan};
 })();

@@ -4,7 +4,7 @@ function Get-LiveStatLabel([string]$Text){
     foreach($key in @($script:MarkerStatNames.Keys|Sort-Object {$script:MarkerStatNames[$_].Length} -Descending)){$label=$script:MarkerStatNames[$key];if($text.Contains($label)){if($key-in @('HP%','ATK%','DEF%')){$key=$key.TrimEnd('%')};return $key}}
     return $null
 }
-function ConvertFrom-LivePanel($Panel,$Subs,$Data,[double]$SubstatsTop,[switch]$NumbersPending){
+function ConvertFrom-LivePanel($Panel,$Subs,$Data,[double]$SubstatsTop,[switch]$NumbersPending,$MainLines=$null){
     $full=Normalize-MarkerText (($Panel|ForEach-Object{$_.text})-join'')
     $matches=@()
     foreach($set in $Data.pieceNames.PSObject.Properties){foreach($part in $set.Value.PSObject.Properties){if($full.Contains((Normalize-MarkerText ([string]$part.Value)))){$matches+=,@{setId=$set.Name;part=$part.Name;piece=[string]$part.Value}}}}
@@ -16,6 +16,7 @@ function ConvertFrom-LivePanel($Panel,$Subs,$Data,[double]$SubstatsTop,[switch]$
     if($levels.Count-ne 1-or$levels[0]-gt 15){if($NumbersPending){$levels=@(-1)}else{throw '未能唯一识别强化等级。'}}
     $mains=@($head|ForEach-Object{Get-StatObservation $_.text}|Where-Object{$null-ne$_})
     if($NumbersPending){$mains=@($head|Where-Object{$_.y-ge($SubstatsTop-55)}|ForEach-Object{$label=Get-LiveStatLabel $_.text;if($label){@{stat=$label;value=0}}})}
+    if($NumbersPending-and$null-ne$MainLines){$label=Get-LiveStatLabel (($MainLines|ForEach-Object{$_.text})-join'');$mains=@();if($label){$mains=@(@{stat=$label;value=0})}}
     if($mains.Count-ne 1){throw '未能唯一识别主属性。'}
     $active=@();$preview=@()
     foreach($line in $Subs){$s=Get-StatObservation $line.text;if($NumbersPending){$label=Get-LiveStatLabel $line.text;if($label){$s=@{stat=$label;value=0}}};if(-not$s){continue};$sub=@{key=$s.stat;value=$s.value};if((Normalize-MarkerText $line.text)-match'激活|解锁|生效'){$preview+=,$sub}else{$active+=,$sub}}
@@ -27,12 +28,15 @@ function Get-LiveInventoryCount($Lines){
     if($text-match'遗器数量([0-9]{1,4})/3000'){return [int]$Matches[1]}
     throw '未识别到遗器总数，请打开遗器背包。'
 }
-function Assert-LiveDecision($Request,$Decision){
+function Assert-LiveDecision($Request,$Decision,[bool]$AllowUnlockLowPotential=$false){
     if($Request.requestId-ne$Decision.requestId){throw '当前遗器的评分回应已过期。'}
     if($Decision.action-notin @('keep','skip','markDiscard','stop')){throw '未知现场评分决策。'}
     if($Decision.action-eq'markDiscard'){
         $r=$Request.observation
-        if($r.rarity-ne 5-or$r.lock-ne$false-or$r.discard-ne$false-or$r.location-cne''-or$Decision.verified-ne$true){throw '当前遗器受保护或评分未核实。'}
+        $lockAllowed=$r.lock-eq$false-or($r.lock-eq$true-and$Decision.unlockFirst-eq$true-and$AllowUnlockLowPotential)
+        if($r.rarity-ne 5-or-not$lockAllowed-or$r.discard-ne$false-or$r.location-cne''-or$Decision.verified-ne$true){throw '当前遗器受保护或评分未核实。'}
+        $o=$Decision.observation;$potential=$Decision.averagePotential
+        if($null-eq$o.level-or$o.level-lt 0-or$o.level-ge 15-or$null-eq$potential-or[double]::IsNaN([double]$potential)-or[double]::IsInfinity([double]$potential)-or[double]$potential-lt 0-or[double]$potential-ge 80){throw '仅允许标记未满级、平均满级潜力低于 80 的遗器。'}
     }
     return $true
 }

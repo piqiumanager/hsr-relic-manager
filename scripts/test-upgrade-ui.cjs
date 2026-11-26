@@ -30,7 +30,7 @@ const first=JSON.parse(fs.readFileSync(path.join(root,'work/upgrade-request-fixt
   await page.goto(origin);await page.waitForFunction(()=>!!globalThis.RelicDesk);
   assert.equal(await page.locator('html').getAttribute('lang'),'zh-CN');
   await page.waitForFunction(()=>document.getElementById('characterBackground').naturalWidth>0);const initialBackground=await page.evaluate(()=>RelicBackground.selected);
-  assert.equal(await page.evaluate(()=>HSRBackgroundData.length),6);assert.equal(await page.locator('#characterBackground').evaluate(el=>Number(getComputedStyle(el).opacity)),.18);
+  assert.equal(await page.evaluate(()=>HSRBackgroundData.length),33);assert.equal(await page.locator('#characterBackground').evaluate(el=>Number(getComputedStyle(el).opacity)),.36);
   await page.locator('#upgradeModeBtn').click();assert.equal(await page.locator('#markBtn').innerText(),'开始强化');
   assert.match(await page.locator('#rulesSummary').innerText(),/80/);
   await page.evaluate(async snapshot=>{await RelicDesk.loadFile(new File([JSON.stringify(snapshot)],'synthetic.json',{type:'application/json'}));RelicDesk.imported.captureId='synthetic-capture';document.getElementById('mode').dispatchEvent(new Event('change'));},snapshot);await page.waitForFunction(()=>!document.getElementById('markBtn').disabled);

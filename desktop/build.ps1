@@ -44,10 +44,10 @@ if($LASTEXITCODE -ne 0){throw 'Launcher compilation failed.'}
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot '使用说明.txt') -Destination $OutputRoot -Force
 $package=Join-Path $BuildRoot 'download';[IO.Directory]::CreateDirectory($package)|Out-Null
 Copy-Item -LiteralPath $exe -Destination $package;Copy-Item -LiteralPath (Join-Path $OutputRoot '使用说明.txt') -Destination $package
-$zip=Join-Path $OutputRoot 'hsr-relic-manager-v1.5.0-windows.zip'
+$zip=Join-Path $OutputRoot 'hsr-relic-manager-v1.5.1-windows.zip'
 if(Test-Path -LiteralPath $zip){Remove-Item -LiteralPath $zip -Force}
 [IO.Compression.ZipFile]::CreateFromDirectory($package,$zip,[IO.Compression.CompressionLevel]::Optimal,$false)
-$direct=Join-Path $OutputRoot 'hsr-relic-manager-v1.5.0.exe';Copy-Item -LiteralPath $exe -Destination $direct -Force
+$direct=Join-Path $OutputRoot 'hsr-relic-manager-v1.5.1.exe';Copy-Item -LiteralPath $exe -Destination $direct -Force
 $checks=@();foreach($file in @($exe,$direct,$zip)){ $checks+=((Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()+'  '+[IO.Path]::GetFileName($file)) }
 [IO.File]::WriteAllLines((Join-Path $OutputRoot 'SHA256SUMS.txt'),$checks,(New-Object Text.UTF8Encoding($false)))
 Write-Output ('EXE='+$exe);Write-Output ('ZIP='+$zip);Get-Item -LiteralPath $exe,$zip | Select-Object Name,Length

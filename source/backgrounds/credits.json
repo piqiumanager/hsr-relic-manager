@@ -3,7 +3,7 @@
   "api": "https://act-api-takumi-static.mihoyo.com/content_v2_user/app/1963de8dc19e461c/getContentList?iChanId=253&iPageSize=999&sLangKey=zh-cn&iPage=1",
   "retrieved": "2026-11-25",
   "copyright": "角色美术版权归米哈游及相关权利人。仅作非商业同人辅助工具界面装饰，素材不适用本项目代码的 AGPL 许可。",
-  "processing": "Official PNG artwork resized to 1000 pixels high and encoded as WebP; transparency is applied only in CSS.",
+  "processing": "Official PC PNG artwork resized to 1000 pixels high and encoded as WebP. Display opacity 0.36 is applied only in CSS.",
   "images": [
     {
       "name": "黄泉",
@@ -58,6 +58,249 @@
       "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/123868/748c554adb15564a18583fd7949cf008_797073333688994248.png",
       "originalSha256": "c4549cf7e04d4190c3b9d1b6a70621d93ced499b7dba51d6ec683aae9a75ca3d",
       "sha256": "7c2665b1b54f07f9e8611e1b3aecf49867d582e00b7c36633ff3660325928ced"
+    },
+    {
+      "name": "翡翠",
+      "id": "official-123869",
+      "infoId": 123869,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/123869/2029c1193505530be66237c6df261d60_8788021789243292502.png",
+      "file": "source/backgrounds/official-123869.webp",
+      "originalSha256": "5bde02b220f3fb2bd3867bef0f206580ab1944e9b785213ef495900a37f11a43",
+      "sha256": "624b3eb83000171a09e69d1add67af8918a957a9b265da1bf24ae004b946b25e"
+    },
+    {
+      "name": "云璃",
+      "id": "official-124761",
+      "infoId": 124761,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/124761/521cbc1e32f18ec1ab789dc9beffda08_9115382104570042049.png",
+      "file": "source/backgrounds/official-124761.webp",
+      "originalSha256": "b3126f04dca7667c402dd0cd47c53cbfd2bffa1700816856e1d9a92575c72cfd",
+      "sha256": "a34d6b72b327e271d1b0d6639e3a88f490564cf34028059ec9aa8028a5941005"
+    },
+    {
+      "name": "飞霄",
+      "id": "official-125551",
+      "infoId": 125551,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/125551/bf4fa83ba349a187fc26ad838b969a08_3726243956231692108.png",
+      "file": "source/backgrounds/official-125551.webp",
+      "originalSha256": "2d41119b31807ad4a5907438e934977887d5a233ae71c94f0e77d7a75178e1f7",
+      "sha256": "849ec9ac79f50427607bb2063f2f417bf1a919b697fef0ce1c8be94daecbe87f"
+    },
+    {
+      "name": "灵砂",
+      "id": "official-125554",
+      "infoId": 125554,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/125554/6d56fbec0f5379c64db75644544378ed_6838685000808153179.png",
+      "file": "source/backgrounds/official-125554.webp",
+      "originalSha256": "13925e5ffb08201bbf67de399d7855a2ac66bc945e43049dcfedd87311d3bdf8",
+      "sha256": "87fd185298247a9bc846b7ba02e678b9de5b803cf3ff7ad7c26341086e5e4bc6"
+    },
+    {
+      "name": "乱破",
+      "id": "official-126375",
+      "infoId": 126375,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/126375/1ade796f254472668966ade840520ce9_1373564632983345593.png",
+      "file": "source/backgrounds/official-126375.webp",
+      "originalSha256": "20b5ebb40d5a326a077fa88644a7176768446034e3b4bbfc291e8444f0e4ce2e",
+      "sha256": "568ff5560aeea6cc67cd71ef334145d58171f23e58b403ec936308452970ec29"
+    },
+    {
+      "name": "忘归人",
+      "id": "official-127117",
+      "infoId": 127117,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/127117/cc57a592ea35b25115cff998be0b1347_4058318276772576665.png",
+      "file": "source/backgrounds/official-127117.webp",
+      "originalSha256": "18eaf07e20088704d6a765d67771eec431b817567e13fce86b192d337509aab6",
+      "sha256": "6eb29236e98aeeab6c22d501b7b4e0460a798ef0164de5a994c2416d2e84ee40"
+    },
+    {
+      "name": "大黑塔",
+      "id": "official-127537",
+      "infoId": 127537,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/127537/0dcec874bcf43a0070cab1822f9160a7_6407593946913009884.png",
+      "file": "source/backgrounds/official-127537.webp",
+      "originalSha256": "f55452e8283df67cee84034179669a633b70e4fa6c96c1fc91800ca2ce2cf775",
+      "sha256": "87c9ba2090ea1859d7f148cc0d0c0d4f223b0d55a5ecd78b1d13a6056a3ebe54"
+    },
+    {
+      "name": "阿格莱雅",
+      "id": "official-127539",
+      "infoId": 127539,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/127539/c2e61624784c2feaf4fa2af4fe349eff_5600873666558914853.png",
+      "file": "source/backgrounds/official-127539.webp",
+      "originalSha256": "858d5c6c7c3b00976728477a6b66118d15714c4d4f7c233b2a62eaaf12025b5a",
+      "sha256": "f1245b2c4eb4e8982e06a0d4765889961e92a7ae40ac55fd6a4b51e59d0ec287"
+    },
+    {
+      "name": "缇宝",
+      "id": "official-154330",
+      "infoId": 154330,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/154330/3e8ba5948b007a7d37a3a08838f30a59_3306659205976251899.png",
+      "file": "source/backgrounds/official-154330.webp",
+      "originalSha256": "adc0630de67e5c20fe815f6af9b35063d590a597f9941292e0580fec2542a46c",
+      "sha256": "c3cb734263897397c826f4b8c6d281fae8feb81020f7e815abd6d5fef34f4ce5"
+    },
+    {
+      "name": "遐蝶",
+      "id": "official-155181",
+      "infoId": 155181,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/155181/9dfe02d106baa45d286b85ad67a714b9_9178069785443545376.png",
+      "file": "source/backgrounds/official-155181.webp",
+      "originalSha256": "8471188d3c6dc751ef1bfb754447486ddf1c787a10c3a48432c5540a82951801",
+      "sha256": "03707177c5441af536b2c88eb309bec4daee6db9b2468c6bade195634f4a946a"
+    },
+    {
+      "name": "风堇",
+      "id": "official-155901",
+      "infoId": 155901,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/155901/0be5dbc98f948d783a22eba7ea4c41f7_4833482172440888130.png",
+      "file": "source/backgrounds/official-155901.webp",
+      "originalSha256": "b680883e3a4f62b0f0f05128e004cc3c4b837bd8955718cdd99d5c8e8e88befa",
+      "sha256": "85f9e975ea6a607afe89e203763efe6dde5eac1f56614ad3c067835347303a5d"
+    },
+    {
+      "name": "赛飞儿",
+      "id": "official-155902",
+      "infoId": 155902,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/155902/c922878dc35dd65d6d6f4ffcfd8b9df6_7370521429386055291.png",
+      "file": "source/backgrounds/official-155902.webp",
+      "originalSha256": "0782e6bf415f0ced7484693b26d62bce987169f70af43250b5a88ea2c34f4b7a",
+      "sha256": "75b213c927f665203a0409ed79922a0e04ee8b4c69318be6b63c9eaddc3a06da"
+    },
+    {
+      "name": "Saber",
+      "id": "official-155949",
+      "infoId": 155949,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/155949/00e27ddb53f40e439185e5a38e56d026_5203046310933277494.png",
+      "file": "source/backgrounds/official-155949.webp",
+      "originalSha256": "558ca8cf2ffd5f4d0173b87514db4271e7fed441495135e52073c5c81d3ce6c4",
+      "sha256": "21492df3bccfc9c03251c6e455c13c22ad7d6bad144b0aff8641c9d236c8fa20"
+    },
+    {
+      "name": "海瑟音",
+      "id": "official-157799",
+      "infoId": 157799,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/157799/0691ba127917ff3ed69177c2f2a0273c_5714417617951572519.png",
+      "file": "source/backgrounds/official-157799.webp",
+      "originalSha256": "599f3a4e9716ad999d7478d01cae9e55ee4f0cf5afe6aec3f13518d2f7644684",
+      "sha256": "2a0346ac3db4443c3aad6baa60bc7c8967d11e8ac057d70f6926e4a026387904"
+    },
+    {
+      "name": "刻律德菈",
+      "id": "official-157800",
+      "infoId": 157800,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/157800/67edaab02525b96a7497972de5ae0005_7564080721952659235.png",
+      "file": "source/backgrounds/official-157800.webp",
+      "originalSha256": "5f47ad4a632cdb94fafc33078e59ff288e04b5b644011c71f6bb10a08759bb67",
+      "sha256": "afc6d8ae45de47d15078cd11ce7ef067feee9f8cf990e28ef77c4ec016c793df"
+    },
+    {
+      "name": "长夜月",
+      "id": "official-159542",
+      "infoId": 159542,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/159542/76d3c3884b40d131a191b4dd3e168d0b_7130567302669113932.png",
+      "file": "source/backgrounds/official-159542.webp",
+      "originalSha256": "8fa7058c6bf842bc7923e3a40e70a83071c59b3f1116bebc73336af50350b1f4",
+      "sha256": "5685f7b201129659b7beea728a650b9678b5542a8138460eeaef52ae3aa8305b"
+    },
+    {
+      "name": "昔涟",
+      "id": "official-160650",
+      "infoId": 160650,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/160650/c289f81437f29695b0e6cc6fe03e4086_7819154418306549929.png",
+      "file": "source/backgrounds/official-160650.webp",
+      "originalSha256": "093f1987ac7f2ee80e8a4956577c46a70026ba6c7c30db65cbceaf143e9f7698",
+      "sha256": "7d2dd9f9fb5fada6de564c95ef4b8b92c6c4e5bbf557cc7e016825fe98e35161"
+    },
+    {
+      "name": "大丽花",
+      "id": "official-161514",
+      "infoId": 161514,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/161514/2b6337c035bf701b265fe728ded31dd6_2634094137501742115.png",
+      "file": "source/backgrounds/official-161514.webp",
+      "originalSha256": "3332b691b635ad7ab468c7e3cba1e5ef39afc013fc6365be07810dc2193ccc19",
+      "sha256": "3d8cb0f6b23e01dff6be156124a2bc451fecbdac48de818f74ac7f3a4dfeb1f1"
+    },
+    {
+      "name": "火花",
+      "id": "official-162244",
+      "infoId": 162244,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/162244/7dcec4d8ef86ebe16ddd9275b531d72a_8823081969331713584.png",
+      "file": "source/backgrounds/official-162244.webp",
+      "originalSha256": "4b0f4f2e0ba486e6fb2b6f0c454832927588c2a2db8b2cf05b6056621868b5d4",
+      "sha256": "0be4bdfcb6fc3aefce3f132dda6113634da4acc2eb71d43a942ddf21d8295841"
+    },
+    {
+      "name": "爻光",
+      "id": "official-162245",
+      "infoId": 162245,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/162245/53f57e63185e7dc55ec6c8b02002672d_204810161252700097.png",
+      "file": "source/backgrounds/official-162245.webp",
+      "originalSha256": "7f38e89b8368bc874ad7e6e2c07421c9dfd5873771bab03a9304d7bac2738e18",
+      "sha256": "842aed83084e047fde35a8474d423babbd9072fa9f022f019f72de3f956290c2"
+    },
+    {
+      "name": "绯英",
+      "id": "official-163493",
+      "infoId": 163493,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/163493/9df18023a10ff7ce4be46f35b16d0dba_7903867078585820869.png",
+      "file": "source/backgrounds/official-163493.webp",
+      "originalSha256": "73ba26d591ea67107282ba558886c4b5340150f7fb6e1c54ae74c7b5bd3111ea",
+      "sha256": "a9f2398a5c653b2be95c4518ff1b0d8a72ecb513d498599f2200b214a7568383"
+    },
+    {
+      "name": "银狼LV.999",
+      "id": "official-163492",
+      "infoId": 163492,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/163492/36f3f8531ec1cd6b1dd628bf233233e7_8755161332714029282.png",
+      "file": "source/backgrounds/official-163492.webp",
+      "originalSha256": "9e71819b5fa2ad7a76eaf98bbaf302b00e59030b7ee0de6ff6a49ca0cee7a42c",
+      "sha256": "95aed2bc9d89d467900384e5980cafd7c410c8a2d585a1be4861b44fb3165106"
+    },
+    {
+      "name": "姬子•启行",
+      "id": "official-164967",
+      "infoId": 164967,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/164967/033d4b4c641473b6b358954d91da2c4b_142199416253117773.png",
+      "file": "source/backgrounds/official-164967.webp",
+      "originalSha256": "246a8d4406740303c68b269f6e95c1c2da41205b5fd451547365c61c2eaa7418",
+      "sha256": "4864d9fdab62ab9615f3b84fe4849d442fc9f8c3986fccea3160245de6b94b73"
+    },
+    {
+      "name": "远坂凛",
+      "id": "official-164969",
+      "infoId": 164969,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/164969/b3606ed0b884524b86ed3228ac6d29db_8064821945456653340.png",
+      "file": "source/backgrounds/official-164969.webp",
+      "originalSha256": "796badf0940d58fb893efb23769270fffc515bc8a6cb139d9f329409c02f7070",
+      "sha256": "6e2a54288e25c5b3f5a33f1e7ceaf16367a8f81f38ecb3512034d39d82280dff"
+    },
+    {
+      "name": "知更鸟•晴歌",
+      "id": "official-165854",
+      "infoId": 165854,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/165854/3dee96ac3257404ab7ae121de7082719_8878809682077009723.png",
+      "file": "source/backgrounds/official-165854.webp",
+      "originalSha256": "697c4f463a8be3e643c51c2ff8daae43025e6ce2c97cab45c13b3e986947f974",
+      "sha256": "bd467a0d15f6bad69d886b9eeee3306608495d8147f5c0cb0e81c960e8963007"
+    },
+    {
+      "name": "真珠",
+      "id": "official-166171",
+      "infoId": 166171,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/166171/34be2460a3907e743f77d4844985287f_7752712061501680767.png",
+      "file": "source/backgrounds/official-166171.webp",
+      "originalSha256": "dd940c8801f0ca0d826ef892b4e45467f766fda4f7980c0b3c2fcececbf1e791",
+      "sha256": "8486064af7ae4445695ddeba49f6ce3d0dab8aa7121790607ea3dbab175b588e"
+    },
+    {
+      "name": "三月七·巡猎",
+      "id": "official-124764",
+      "infoId": 124764,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/124764/e8adfb4cfb09d3e7b91df5f89612421c_6771148719898390929.png",
+      "file": "source/backgrounds/official-124764.webp",
+      "originalSha256": "43699e68b97e533b9b3f04c27756295c028107b5de751ef5f9af76a03ba10a98",
+      "sha256": "2134b769cd685f9116624758ab800874f63f2e636a634137cf6a842e9b0aed6e"
     }
   ]
 }
