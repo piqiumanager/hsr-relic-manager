@@ -46,7 +46,7 @@ function Save-State($name,$message){
       $script:scoreRequests++
     }
 }
-function Check-Stop {if($script:case-eq'stop-after-upgrade'-and$script:confirmations-ge 1){throw(New-Object OperationCanceledException('Synthetic stop'))}}
+function Check-Stop {if($script:case-eq'stop-score-ready'-and$script:scoreRequests-gt 0){throw(New-Object OperationCanceledException('Stopped while score response was arriving'))};if($script:case-eq'stop-after-upgrade'-and$script:confirmations-ge 1){throw(New-Object OperationCanceledException('Synthetic stop'))}}
 function Check-Inventory {Check-Stop;return $script:case-ne'left-inventory'}
 function Read-Selected($b,$index){
     if([RelicNative]::Traversal){$script:physical=$script:bag[[RelicNative]::Index]}
@@ -108,6 +108,10 @@ foreach($name in @('unlock-not-applied','mark-not-applied','changed-after-mark',
     $status=ConvertFrom-Json ([IO.File]::ReadAllText($statusPath,$utf8))
     Assert ($status.state-eq'failed'-and$state.marked-eq 0-and[RelicNative]::Marks-le 1-and[RelicNative]::Unlocks-le 1) ('Failure never increments success or retries: '+$name)
 }
+Reset-Case 'stop-score-ready' $locked
+Assert (Run-Case) 'Cancellation during an immediately delivered score is detected'
+$status=ConvertFrom-Json ([IO.File]::ReadAllText($statusPath,$utf8));Assert ($status.state-eq'stopped'-and[RelicNative]::Marks-eq 0-and[RelicNative]::Unlocks-eq 0) 'A ready score cannot bypass cancellation'
+$cancelled=ConvertFrom-Json ([IO.File]::ReadAllText((Join-Path $JobDirectory 'snapshot.json'),$utf8));Assert $cancelled.metadata.partial 'Cancellation before saving the final record cannot create a complete snapshot'
 Reset-Case 'preview' $locked $true;$script:PreviewOnly=$true
 Assert (-not(Run-Case)-and$state.marked-eq 0-and[RelicNative]::Unlocks-eq 0-and[RelicNative]::Marks-eq 0-and$confirmations-eq 0) 'Preview cannot mark, unlock or spend'
 Reset-Case 'high-to-15' $fixture.high[0] $true;$script:sequence=$fixture.high
@@ -140,4 +144,6 @@ Assert ($state.marked-eq 1-and$state.unlocked-eq 1-and[RelicNative]::Marks-eq 1-
 Assert (@($saved.relics|Where-Object{$_.level-eq 15-and$_.location-eq''-and$_.discard-eq$false}).Count-eq 1-and$state.equippedLow-eq 1) 'Final inventory contains the high +15 and the protected equipped warning'
 Assert ($saved.metadata.partial-eq$false-and$state.totalInspected-eq 5) 'Completion requires a whole stable pass after mutation'
 [RelicNative]::Traversal=$false
+Reset-Case 'empty-bag' $fixture.junk;$state.scanned=0;$state.inventoryCount=0;Invoke-LiveTraversal
+$empty=ConvertFrom-Json ([IO.File]::ReadAllText((Join-Path $JobDirectory 'snapshot.json'),$utf8));Assert ($state.state-eq'complete'-and$empty.relics.Count-eq 0-and[RelicNative]::Marks-eq 0) 'An empty inventory serializes a complete empty snapshot with no input'
 Write-Output ('Offline live pipeline passed: '+$checks+' checks; production JS scoring, API/file IPC, worker orchestration and snapshots; simulated input only, actual game input: 0.')

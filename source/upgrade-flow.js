@@ -47,10 +47,18 @@ globalThis.UpgradeFlow=(()=>{
   return{schema:'hsr-marker-plan-v1',operation:'upgrade',captureId:imported.captureId,policy:POLICY,candidates,total:candidates.reduce((n,r)=>n+r.count,0),inventoryCount:Object.values(imported.root.relics).length,targetIds:E.targets(imported,result.settings).map(p=>p.id),settings:result.settings,allowSalvage:false};
  }
  function possibleValues(stat,visible,level){
-  const E=RelicEngine,C=HSRCore,roll=C.SubStatValues[stat]?.[5];if(!roll)throw Error('无法识别强化词条');
+  const E=RelicEngine,C=HSRCore,roll=C.SubStatValues[stat]?.[5];if(!roll)throw Error('无法识别强化词条');if(!Number.isFinite(visible)||visible<=0||!Number.isInteger(level)||level<0||level>15)throw Error('词条数值或等级无效');
   const display=v=>['HP','ATK','DEF','SPD'].includes(stat)?Math.floor(v+0.00001):Math.floor(v*10+0.00001)/10;
-  const values=[];for(let n=1;n<=1+Math.floor(level/3);n++)for(let hi=0;hi<=n;hi++)for(let mid=0;mid<=n-hi;mid++){const value=hi*roll.high+mid*roll.mid+(n-hi-mid)*roll.low;if(Math.abs(display(value)-visible)<0.011)values.push(value);}
-  if(!values.length)throw Error('强化词条数值不符合游戏档位');return{low:Math.min(...values),high:Math.max(...values)};
+  const values=[],counts=new Set();for(let n=1;n<=1+Math.floor(level/3);n++)for(let hi=0;hi<=n;hi++)for(let mid=0;mid<=n-hi;mid++){const value=hi*roll.high+mid*roll.mid+(n-hi-mid)*roll.low;if(Math.abs(display(value)-visible)<0.011){values.push(value);counts.add(n);}}
+  if(!values.length)throw Error('强化词条数值不符合游戏档位');return{low:Math.min(...values),high:Math.max(...values),rollCounts:[...counts]};
+ }
+ function validateRollBudget(raw){
+  if(!raw||!Number.isInteger(raw.level)||raw.level<0||raw.level>15||!Array.isArray(raw.substats)||raw.substats.length<3||raw.substats.length>4||(raw.level>=3&&raw.substats.length!==4))throw Error('词条数量或等级无效');
+  let totals=new Set([0]);for(const s of raw.substats){const counts=possibleValues(s.key,s.value,raw.level).rollCounts;totals=new Set([...totals].flatMap(total=>counts.map(n=>total+n)));}
+  const upgrades=Math.floor(raw.level/3),min=3+upgrades,max=4+upgrades;
+  if(![...totals].some(n=>n>=min&&n<=max))throw Error('副属性总强化次数与等级不一致');
+  for(const s of raw.preview_substats||[])possibleValues(s.key,s.value,0);
+  return true;
  }
  function scoreObservation(request,plan){
   const E=RelicEngine,D=HSRData,C=HSRCore,o=request.observation,c=plan.candidates.find(c=>c.key===request.candidateKey);
@@ -62,6 +70,7 @@ globalThis.UpgradeFlow=(()=>{
   if(request.initial&&o.enhance===0){const v=c.initialScores;lower=Math.min(...v.map(s=>s.average));upper=Math.max(...v.map(s=>s.average));}
   else{
    if(!Array.isArray(o.substats)||o.substats.length!==4||new Set(o.substats.map(s=>s.stat)).size!==4||o.substats.some(s=>s.stat===o.main.stat))throw Error('强化后四个副属性未完整识别');
+   validateRollBudget({level:o.enhance,substats:o.substats.map(s=>({key:s.stat,value:s.value}))});
    const ranges=o.substats.map(s=>possibleValues(s.stat,s.value,o.enhance));
    const variant=k=>E.parse({relics:[{_uid:request.relicId,set_id:o.setId,slot:o.part,rarity:5,level:o.enhance,mainstat:o.main.stat,substats:o.substats.map((s,i)=>({key:s.stat,value:ranges[i][k]})),lock:false,location:'',discard:false}]}).relics[0];
    const lo=variant('low'),hi=variant('high');if(lo.issues.length||hi.issues.length)throw Error('强化后遗器属性未通过校验');
@@ -75,5 +84,5 @@ globalThis.UpgradeFlow=(()=>{
   if(lower>=80)return{...common,action:o.enhance===15?'keep':'enhance',targetLevel:o.enhance===15?15:o.enhance+3};
   return{...common,action:'stop',reason:'画面隐藏小数导致评分跨过 80 分，已保留并停止。'};
  }
- return{POLICY,decision,verifyPreparation,verifyAdvance,run,buildPlan,possibleValues,scoreObservation};
+ return{POLICY,decision,verifyPreparation,verifyAdvance,run,buildPlan,possibleValues,validateRollBudget,scoreObservation};
 })();

@@ -37,12 +37,13 @@ function Save-LiveEvidence($Bitmap,[string]$Stage){
     }
 }
 function Ask-LiveScore($Observation,[string]$Intent='score'){
+    Check-Stop
     $request=@{requestId=[Guid]::NewGuid().ToString('N');relicId=$Observation._uid;observation=$Observation;characters=@($plan.characters);intent=$Intent;pass=$state.passes;upgrade=($plan.upgrade-eq$true-and-not$PreviewOnly)}
     $script:state.request=$request;[IO.File]::WriteAllText((Join-Path $JobDirectory 'request.json'),(ConvertTo-Json $request -Depth 20 -Compress),$utf8)
     Save-State 'awaitingScore' ('正在评分 '+$state.scanned+'/'+$state.inventoryCount+'，已标记 '+$state.marked+'，已跳过 '+$state.skipped+'。')
     $file=Join-Path $JobDirectory ('decision-'+$request.requestId+'.json');$deadline=(Get-Date).AddSeconds(45)
     while(-not(Test-Path -LiteralPath $file)){Check-Stop;if((Get-Date)-gt$deadline){throw '评分界面未响应，已停止。'};Start-Sleep -Milliseconds 60}
-    $answer=ConvertFrom-Json ([IO.File]::ReadAllText($file,$utf8));Assert-LiveDecision $request $answer ($plan.allowUnlockLowPotential-eq$true) ($plan.upgrade-eq$true-and-not$PreviewOnly)|Out-Null;$script:state.Remove('request')
+    Check-Stop;$answer=ConvertFrom-Json ([IO.File]::ReadAllText($file,$utf8));Assert-LiveDecision $request $answer ($plan.allowUnlockLowPotential-eq$true) ($plan.upgrade-eq$true-and-not$PreviewOnly)|Out-Null;$script:state.Remove('request')
     if($answer.action-eq'stop'){throw $answer.reason};return $answer
 }
 function Mark-LiveRelic($Observation,$Expected,$Record=$null){
@@ -81,7 +82,7 @@ function Mark-LiveRelic($Observation,$Expected,$Record=$null){
     }finally{$reference.Dispose()}
 }
 function Save-Snapshot {
-    if($null-eq$script:records){return};$snapshot=@{source='当前游戏画面';characters=@($plan.characters);relics=$script:records.ToArray();metadata=@{partial=($state.scanned-lt$state.inventoryCount-or$state.unrecognized-gt 0);screenRead=$true;inventoryCount=$state.inventoryCount;unrecognized=$state.unrecognized}}
+    if($null-eq$script:records){return};$snapshot=@{source='当前游戏画面';characters=@($plan.characters);relics=$script:records.ToArray();metadata=@{partial=($state.scanned-lt$state.inventoryCount-or$script:records.Count-lt$state.inventoryCount-or$state.unrecognized-gt 0);screenRead=$true;inventoryCount=$state.inventoryCount;unrecognized=$state.unrecognized}}
     [IO.File]::WriteAllText((Join-Path $JobDirectory 'snapshot.json'),(ConvertTo-Json $snapshot -Depth 30 -Compress),$utf8)
 }
 function Upgrade-LiveRelic($Initial,[int]$RecordIndex){

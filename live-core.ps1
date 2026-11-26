@@ -27,39 +27,61 @@ function ConvertFrom-LivePanel($Panel,$Subs,$Data,[double]$SubstatsTop,[switch]$
 }
 function Get-LiveInventoryCount($Lines){
     $text=Normalize-MarkerText (($Lines|ForEach-Object{$_.text})-join'')
-    if($text-match'遗器数量([0-9]{1,4})/3000'){return [int]$Matches[1]}
+    if($text-match'遗器数量([0-9]{1,4})/3000'){$count=[int]$Matches[1];if($count-gt 3000){throw '遗器数量超过容量，识别无效。'};return $count}
     throw '未识别到遗器总数，请打开遗器背包。'
 }
 function Assert-LiveDecision($Request,$Decision,[bool]$AllowUnlockLowPotential=$false,[bool]$AllowEnhance=$false){
     if($Request.requestId-ne$Decision.requestId){throw '当前遗器的评分回应已过期。'}
     if($Decision.action-notin @('keep','skip','markDiscard','stop','enhance')){throw '未知现场评分决策。'}
+    if($Decision.action-in @('markDiscard','enhance')){Assert-LiveObservation $Request.observation $Decision.observation|Out-Null}
     if($Decision.action-eq'markDiscard'){
         $r=$Request.observation
         $lockAllowed=$r.lock-eq$false-or($r.lock-eq$true-and$Decision.unlockFirst-eq$true-and$AllowUnlockLowPotential)
         if($r.rarity-ne 5-or-not$lockAllowed-or$r.discard-ne$false-or$r.location-cne''-or$Decision.verified-ne$true){throw '当前遗器受保护或评分未核实。'}
         $o=$Decision.observation;$potential=if($o.level-eq 15){$Decision.currentScore}else{$Decision.averagePotential}
-        if($null-eq$o.level-or$o.level-lt 0-or$o.level-gt 15-or$o.level-ne[Math]::Floor([double]$o.level)-or$null-eq$potential-or[double]::IsNaN([double]$potential)-or[double]::IsInfinity([double]$potential)-or[double]$potential-lt 0-or[double]$potential-ge 80){throw '仅允许标记未满级平均潜力或满级当前分低于 80 的遗器。'}
+        if($null-eq$o.level-or$o.level-lt 0-or$o.level-gt 15-or$o.level-ne[Math]::Floor([double]$o.level)-or-not(Test-LiveNumber $potential)-or[double]::IsNaN([double]$potential)-or[double]::IsInfinity([double]$potential)-or[double]$potential-lt 0-or[double]$potential-ge 80){throw '仅允许标记未满级平均潜力或满级当前分低于 80 的遗器。'}
     }
     if($Decision.action-eq'enhance'){
-        $r=$Request.observation;$o=$Decision.observation;$score=$Decision.averagePotential
+        $r=$Request.observation;$o=$Decision.observation;$score=$Decision.averagePotential;$lower=$Decision.averageLower
         if(-not$AllowEnhance-or$Request.upgrade-ne$true-or$r.rarity-ne 5-or$r.lock-ne$false-or$r.discard-ne$false-or$r.location-cne''-or$Decision.verified-ne$true){throw '未授权强化或遗器受保护。'}
-        if($null-eq$o.level-or$o.level-lt 0-or$o.level-ge 15-or$o.level-ne[Math]::Floor([double]$o.level)-or$Decision.targetLevel-ne[Math]::Min(15,([Math]::Floor($o.level/3)+1)*3)-or$null-eq$score-or[double]::IsNaN([double]$score)-or[double]::IsInfinity([double]$score)-or[double]$score-lt 80){throw '强化目标或评分不满足 +3 / 80 分规则。'}
+        if($null-eq$o.level-or$o.level-lt 0-or$o.level-ge 15-or$o.level-ne[Math]::Floor([double]$o.level)-or$Decision.targetLevel-ne[Math]::Min(15,([Math]::Floor($o.level/3)+1)*3)-or-not(Test-LiveNumber $score)-or[double]::IsNaN([double]$score)-or[double]::IsInfinity([double]$score)-or[double]$score-lt 80-or-not(Test-LiveNumber $lower)-or$lower-lt 80-or$lower-gt$score){throw '强化目标或评分不满足 +3 / 80 分规则。'}
     }
     return $true
 }
+function Test-LiveNumber($Value){
+    if($null-eq$Value-or$Value.GetType().Name-notin @('Byte','SByte','Int16','UInt16','Int32','UInt32','Int64','UInt64','Single','Double','Decimal')){return $false}
+    return -not([double]::IsNaN([double]$Value)-or[double]::IsInfinity([double]$Value))
+}
 function Test-LiveIdentity($A,$B){
-    if(-not$A-or-not$B-or$null-eq$A.level-or$null-eq$B.level-or$A.level-lt 0-or$A.level-ne$B.level-or$A.set_id-cne$B.set_id-or$A.slot-cne$B.slot-or$A.mainstat-cne$B.mainstat-or$A.pieceName-cne$B.pieceName-or$null-eq$A.mainstat_value-or$null-eq$B.mainstat_value-or[Math]::Abs($A.mainstat_value-$B.mainstat_value)-gt .011){return $false}
+    if(-not$A-or-not$B-or-not(Test-LiveNumber $A.level)-or-not(Test-LiveNumber $B.level)-or$A.level-lt 0-or$A.level-gt 15-or$A.level-ne[Math]::Floor([double]$A.level)-or$A.level-ne$B.level){return $false}
+    foreach($key in @('set_id','slot','mainstat','pieceName')){if([string]::IsNullOrWhiteSpace([string]$A.$key)-or$A.$key-cne$B.$key){return $false}}
+    if(-not(Test-LiveNumber $A.mainstat_value)-or-not(Test-LiveNumber $B.mainstat_value)-or$A.mainstat_value-le 0-or$B.mainstat_value-le 0-or[Math]::Abs($A.mainstat_value-$B.mainstat_value)-gt .011){return $false}
     foreach($key in @('substats','preview_substats')){
       $left=@($A.$key|Where-Object{$null-ne$_});$right=@($B.$key|Where-Object{$null-ne$_});if($left.Count-ne$right.Count){return $false}
-      foreach($s in $left){$match=@($right|Where-Object{$_.key-ceq$s.key});if($match.Count-ne 1-or[Math]::Abs($s.value-$match[0].value)-gt .011){return $false}}
+      foreach($stat in $left){$match=@($right|Where-Object{$_.key-ceq$stat.key});if([string]::IsNullOrWhiteSpace([string]$stat.key)-or$match.Count-ne 1-or-not(Test-LiveNumber $stat.value)-or-not(Test-LiveNumber $match[0].value)-or$stat.value-le 0-or$match[0].value-le 0-or[Math]::Abs($stat.value-$match[0].value)-gt .011){return $false}}
     }
-    return @($A.substats).Count-ge 3
+    $active=@($A.substats).Count;$preview=@($A.preview_substats|Where-Object{$null-ne$_}).Count
+    return ($active-ge 3-and$active-le 4-and($active+$preview)-le 4-and($A.level-lt 3-or($active-eq 4-and$preview-eq 0)))
 }
-
+function Assert-LiveObservation($Original,$Resolved){
+    if(-not(Test-LiveIdentity $Resolved $Resolved)-or$Resolved.rarity-ne 5){throw '评分回包中的遗器属性不完整。'}
+    foreach($key in @('set_id','slot','pieceName')){if([string]::IsNullOrWhiteSpace([string]$Original.$key)-or$Original.$key-cne$Resolved.$key){throw '评分回包不是当前选中的遗器。'}}
+    foreach($key in @('lock','discard','location','_uid')){if($Original.$key-cne$Resolved.$key){throw '评分回包的保护状态或遗器编号改变。'}}
+    if($Original.numericImages){
+      if(-not$Original.numericFingerprint-or$Original.numericFingerprint-cne$Resolved.numericFingerprint){throw '评分回包的画面指纹不一致。'}
+      if($Original.mainstat-cne$Resolved.mainstat-and-not($Original.mainstat-in @('HP','ATK','DEF')-and$Resolved.mainstat-ceq($Original.mainstat+'%')-and$Original.slot-notin @('Head','Hands'))){throw '评分回包的主属性类别改变。'}
+      foreach($key in @('substats','preview_substats')){
+        $a=@($Original.$key|Where-Object{$null-ne$_});$b=@($Resolved.$key|Where-Object{$null-ne$_});if($a.Count-ne$b.Count){throw '评分回包的词条数量改变。'}
+        for($i=0;$i-lt$a.Count;$i++){if($a[$i].key-cne$b[$i].key-and-not($a[$i].key-in @('HP','ATK','DEF')-and$b[$i].key-ceq($a[$i].key+'%'))){throw '评分回包的词条类别改变。'}}
+      }
+    }elseif(-not(Test-LiveIdentity $Original $Resolved)){throw '评分回包与当前属性不一致。'}
+    return $true
+}
 function Assert-LiveAdvance($Before,$After,[int]$Target){
+    if(-not(Test-LiveIdentity $Before $Before)-or-not(Test-LiveIdentity $After $After)){throw '强化前后属性无效。'}
     if($Target-ne[Math]::Min(15,([Math]::Floor($Before.level/3)+1)*3)-or$After.level-ne$Target-or$Before.set_id-cne$After.set_id-or$Before.slot-cne$After.slot-or$Before.pieceName-cne$After.pieceName-or$Before.mainstat-cne$After.mainstat-or$After.lock-ne$false-or$After.discard-ne$false-or$After.location-cne''){throw '强化后的遗器身份、等级或保护状态不一致。'}
     if(@($After.substats).Count-ne 4-or@($After.preview_substats).Count-ne 0){throw '强化后四个副属性未完整识别。'}
-    foreach($s in $Before.substats){$next=@($After.substats|Where-Object{$_.key-ceq$s.key});if($next.Count-ne 1-or$next[0].value+0.011-lt$s.value){throw '强化后副属性减少或缺失。'}}
+    foreach($stat in $Before.substats){$next=@($After.substats|Where-Object{$_.key-ceq$stat.key});if($next.Count-ne 1-or$next[0].value+0.011-lt$stat.value){throw '强化后副属性减少或缺失。'}}
     if($After.mainstat_value-le$Before.mainstat_value){throw '强化后主属性未提升。'}
     return $true
 }

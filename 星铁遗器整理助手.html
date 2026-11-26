@@ -11,7 +11,7 @@ dialog{border:1px solid #ffffffc9;border-radius:22px;box-shadow:0 20px 80px #244
 <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2 2.8 7.2L22 12l-7.2 2.8L12 22l-2.8-7.2L2 12l7.2-2.8Z"/></symbol>
 <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
 <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 4v16h17M8 14v2m5-7v7m5-11v11"/></symbol>
-<symbol id="i-gear" viewBox="0 0 24 24"><path d="m9.4 4 .6-2h4l.6 2 2 .9 2-.5 2 3.4-1.4 1.5.3 2.2 1.6 1.4-1.9 3.5-2.1-.4-1.8 1.3-.6 2.7h-4l-.6-2.7-1.8-1.3-2.1.4-1.9-3.5 1.6-1.4.2-2.2L3.6 7.8l2-3.4 2 .5Z"/><circle cx="12" cy="11" r="3"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><path d="m9.4 4 .6-2h4l.6 2 2 .9 2-.5 2 3.4-1.4 1.5.4 2.2 1.6 1.4-1.9 3.5-2.1-.4-1.8 1.3-.6 2.7h-4l-.6-2.7-1.8-1.3-2.1.4-1.9-3.5 1.6-1.4.2-2.2L3.6 7.8l2-3.4 2 .5Z"/><circle cx="12" cy="11" r="3"/></symbol>
 <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="m4 18 5-5 4 3 4-5 4 6"/></symbol>
 <symbol id="i-clean" viewBox="0 0 24 24"><path d="m14 3-6 9 5 4 7-8M8 12l-4 3-1 6 6-2 4-3M4 17l3 3M18 3v3m-1.5-1.5h3"/></symbol>
 <symbol id="i-gem" viewBox="0 0 24 24"><path d="m7 4-4 5 9 12 9-12-4-5ZM3 9h18M7 4l5 17 5-17"/></symbol>
@@ -21,7 +21,7 @@ dialog{border:1px solid #ffffffc9;border-radius:22px;box-shadow:0 20px 80px #244
 <div class="app">
 <aside class="sidebar"><div class="brand"><span class="brand-mark"><svg><use href="#i-star"/></svg></span><div class="brand-copy"><strong>绷铁遗器</strong><small>一键分解</small></div></div>
 <nav class="navbar" aria-label="主导航"><div class="nav-current" aria-current="page"><svg><use href="#i-grid"/></svg><span>遗器整理</span></div><button id="detailsBtn" disabled title="评分明细"><svg><use href="#i-chart"/></svg><span>评分明细</span></button><button id="galleryBtn" title="角色背景"><svg><use href="#i-image"/></svg><span>角色背景</span><small class="nav-count">59</small></button><button id="settingsBtn" title="设置"><svg><use href="#i-gear"/></svg><span>设置</span></button></nav>
-<div class="sidebar-bottom"><button id="importBtn" class="import-button" title="导入背包"><svg><use href="#i-import"/></svg><span>导入背包</span></button><input id="fileInput" type="file" accept=".json" hidden><button id="demoBtn" hidden>体验示例</button><small class="version">v1.5.3 · 测试版</small></div></aside>
+<div class="sidebar-bottom"><button id="importBtn" class="import-button" title="导入背包"><svg><use href="#i-import"/></svg><span>导入背包</span></button><input id="fileInput" type="file" accept=".json" hidden><button id="demoBtn" hidden>体验示例</button><small class="version">v1.5.4 · 测试版</small></div></aside>
 <section class="main"><header class="topbar"><div><span class="section-kicker">遗器管理</span><h1 id="taskTitle">遗器清理</h1></div><span class="resolution">1920 × 1080<span>简体中文</span></span></header>
 <main class="workspace"><div class="character-stage" aria-hidden="true"><div class="art-halo"></div><img id="characterBackground" alt=""><div class="art-shade"></div></div>
 <section class="control-pane"><div class="task-title"><h2>留下好胚子</h2><p>平均满级潜力 · 80 分</p></div>
@@ -1663,10 +1663,18 @@ globalThis.UpgradeFlow=(()=>{
   return{schema:'hsr-marker-plan-v1',operation:'upgrade',captureId:imported.captureId,policy:POLICY,candidates,total:candidates.reduce((n,r)=>n+r.count,0),inventoryCount:Object.values(imported.root.relics).length,targetIds:E.targets(imported,result.settings).map(p=>p.id),settings:result.settings,allowSalvage:false};
  }
  function possibleValues(stat,visible,level){
-  const E=RelicEngine,C=HSRCore,roll=C.SubStatValues[stat]?.[5];if(!roll)throw Error('无法识别强化词条');
+  const E=RelicEngine,C=HSRCore,roll=C.SubStatValues[stat]?.[5];if(!roll)throw Error('无法识别强化词条');if(!Number.isFinite(visible)||visible<=0||!Number.isInteger(level)||level<0||level>15)throw Error('词条数值或等级无效');
   const display=v=>['HP','ATK','DEF','SPD'].includes(stat)?Math.floor(v+0.00001):Math.floor(v*10+0.00001)/10;
-  const values=[];for(let n=1;n<=1+Math.floor(level/3);n++)for(let hi=0;hi<=n;hi++)for(let mid=0;mid<=n-hi;mid++){const value=hi*roll.high+mid*roll.mid+(n-hi-mid)*roll.low;if(Math.abs(display(value)-visible)<0.011)values.push(value);}
-  if(!values.length)throw Error('强化词条数值不符合游戏档位');return{low:Math.min(...values),high:Math.max(...values)};
+  const values=[],counts=new Set();for(let n=1;n<=1+Math.floor(level/3);n++)for(let hi=0;hi<=n;hi++)for(let mid=0;mid<=n-hi;mid++){const value=hi*roll.high+mid*roll.mid+(n-hi-mid)*roll.low;if(Math.abs(display(value)-visible)<0.011){values.push(value);counts.add(n);}}
+  if(!values.length)throw Error('强化词条数值不符合游戏档位');return{low:Math.min(...values),high:Math.max(...values),rollCounts:[...counts]};
+ }
+ function validateRollBudget(raw){
+  if(!raw||!Number.isInteger(raw.level)||raw.level<0||raw.level>15||!Array.isArray(raw.substats)||raw.substats.length<3||raw.substats.length>4||(raw.level>=3&&raw.substats.length!==4))throw Error('词条数量或等级无效');
+  let totals=new Set([0]);for(const s of raw.substats){const counts=possibleValues(s.key,s.value,raw.level).rollCounts;totals=new Set([...totals].flatMap(total=>counts.map(n=>total+n)));}
+  const upgrades=Math.floor(raw.level/3),min=3+upgrades,max=4+upgrades;
+  if(![...totals].some(n=>n>=min&&n<=max))throw Error('副属性总强化次数与等级不一致');
+  for(const s of raw.preview_substats||[])possibleValues(s.key,s.value,0);
+  return true;
  }
  function scoreObservation(request,plan){
   const E=RelicEngine,D=HSRData,C=HSRCore,o=request.observation,c=plan.candidates.find(c=>c.key===request.candidateKey);
@@ -1678,6 +1686,7 @@ globalThis.UpgradeFlow=(()=>{
   if(request.initial&&o.enhance===0){const v=c.initialScores;lower=Math.min(...v.map(s=>s.average));upper=Math.max(...v.map(s=>s.average));}
   else{
    if(!Array.isArray(o.substats)||o.substats.length!==4||new Set(o.substats.map(s=>s.stat)).size!==4||o.substats.some(s=>s.stat===o.main.stat))throw Error('强化后四个副属性未完整识别');
+   validateRollBudget({level:o.enhance,substats:o.substats.map(s=>({key:s.stat,value:s.value}))});
    const ranges=o.substats.map(s=>possibleValues(s.stat,s.value,o.enhance));
    const variant=k=>E.parse({relics:[{_uid:request.relicId,set_id:o.setId,slot:o.part,rarity:5,level:o.enhance,mainstat:o.main.stat,substats:o.substats.map((s,i)=>({key:s.stat,value:ranges[i][k]})),lock:false,location:'',discard:false}]}).relics[0];
    const lo=variant('low'),hi=variant('high');if(lo.issues.length||hi.issues.length)throw Error('强化后遗器属性未通过校验');
@@ -1691,7 +1700,7 @@ globalThis.UpgradeFlow=(()=>{
   if(lower>=80)return{...common,action:o.enhance===15?'keep':'enhance',targetLevel:o.enhance===15?15:o.enhance+3};
   return{...common,action:'stop',reason:'画面隐藏小数导致评分跨过 80 分，已保留并停止。'};
  }
- return{POLICY,decision,verifyPreparation,verifyAdvance,run,buildPlan,possibleValues,scoreObservation};
+ return{POLICY,decision,verifyPreparation,verifyAdvance,run,buildPlan,possibleValues,validateRollBudget,scoreObservation};
 })();
 
 globalThis.NumericOcr=(()=>{
@@ -1721,14 +1730,15 @@ globalThis.LiveFlow=(()=>{
   const E=RelicEngine,C=HSRCore,U=UpgradeFlow,r=globalThis.NumericOcr?await NumericOcr.resolve(request.observation):request.observation;if(!r||r.rarity!==5)throw Error('未确认五星遗器');
   const main=C.MainStatsValues[r.mainstat]?.[5];if(!main||!C.PartsMainStats[r.slot]?.includes(r.mainstat)||!Number.isInteger(r.level)||r.level<0||r.level>15)throw Error('主属性或等级不符合游戏规则');
   const actual=main.base+main.increment*r.level,display=s=>['HP','ATK','DEF','SPD'].includes(s)?Math.floor(actual+1e-5):Math.floor(actual*10+1e-5)/10;
-  if(Math.abs(r.mainstat_value-display(r.mainstat))>.011)throw Error('主属性数值与强化等级不一致');
+  if(!Number.isFinite(r.mainstat_value)||Math.abs(r.mainstat_value-display(r.mainstat))>.011)throw Error('主属性数值与强化等级不一致');
+  U.validateRollBudget(r);
   const variants=['low','high'].map(bound=>({...r,_uid:request.relicId,mainstat_value:actual,substats:r.substats.map(s=>({...s,value:U.possibleValues(s.key,s.value,r.level)[bound]})),preview_substats:(r.preview_substats||[]).map(s=>({...s,value:U.possibleValues(s.key,s.value,0)[bound]}))}));
   const imported=E.parse({source:'当前游戏画面',relics:[variants[1]],characters:request.characters||[]});
   const cfg=E.cleanupSettings(settings);if(cfg.scope==='owned'&&!imported.owned.length)throw Error('现场读取没有角色持有信息，请选择全部已收录五星。');
   const upper=await E.analyze(imported,cfg),lower=await E.analyze(E.parse({...imported.root,relics:[variants[0]]}),cfg),row=upper.rows[0];
   if(!row?.scores.length||row.scoringIssues.length)throw Error('当前属性未通过评分校验');
   const metric=r.level===15?'current':'average',value=row.best[metric];
-  const answer={requestId:request.requestId,action:row.status==='discard'?'markDiscard':row.status==='review'?'skip':'keep',verified:true,averagePotential:row.best.average,currentScore:row.best.current,observation:r,raw:variants[1],row:{...row,scoreBounds:{lower:lower.rows[0]?.best,upper:row.best}},reason:row.reasons.join('；'),equippedLow:!!r.location&&r.location!=='live-protected-footer'&&value<80};
+  const answer={requestId:request.requestId,action:row.status==='discard'?'markDiscard':row.status==='review'?'skip':'keep',verified:true,averagePotential:row.best.average,currentScore:row.best.current,averageLower:lower.rows[0]?.best?.average,currentLower:lower.rows[0]?.best?.current,observation:r,raw:variants[1],row:{...row,scoreBounds:{lower:lower.rows[0]?.best,upper:row.best}},reason:row.reasons.join('；'),equippedLow:!!r.location&&r.location!=='live-protected-footer'&&value<80};
   answer.unlockFirst=r.lock===true&&answer.action==='markDiscard';
   if(answer.unlockFirst)answer.reason=(r.level===15?'当前分':'平均满级潜力')+'低于 80，解锁后标记弃置';
   if(typeof r.lock!=='boolean')answer.reason='锁定状态不明，跳过';else if(r.location!=='')answer.reason=answer.equippedLow?'已装备的低分遗器，已保护，请单独复核':'已装备或装备状态不明，跳过';else if(r.discard!==false)answer.reason='已弃置或状态不明，跳过';
@@ -1767,7 +1777,7 @@ globalThis.LiveFlow=(()=>{
  async function startLive(preview,upgrade=false){if(busy||running||watching)return;running=true;stopping=false;startPending=true;markedInRun=preview?null:0;answeredScores.clear();lastLivePass=null;imported=E.parse({source:'当前游戏画面',relics:[]});result={rows:[],diagnostics:{scored:0,total:0,protected:0,unscored:0,issues:{}},settings};render();try{focusGame();await new Promise(r=>setTimeout(r,150));if(stopping){startPending=false;running=false;message('已停止。','已停止');controls();return;}await api('live/start',{settings,previewOnly:preview,upgrade});startPending=false;if(stopping)await api('marker/stop',{});message(stopping?'正在停止…':preview?'只读评分，不会标记弃置。':upgrade?'逐件评分，每次强化 +3 后重新判断，低于 80 标记弃置。':'开始筛选并标记，未满级看平均潜力，+15 看当前分。','正在读取');watch();}catch(e){startPending=false;running=false;message(e.message,'无法开始');controls();}}
  async function capture(){return startLive(true);}
  async function liveScore(s){const q=s.request;if(!q||answeredScores.has(q.requestId))return;if(q.pass!==undefined&&q.pass!==lastLivePass){lastLivePass=q.pass;imported=E.parse({source:'当前游戏画面',relics:[]});result={rows:[],diagnostics:{scored:0,total:0,protected:0,unscored:0,issues:{}},settings};}let a;try{a=await LiveFlow.score(q,settings);}catch(e){a={requestId:q.requestId,action:e.fatal?'stop':'skip',verified:false,raw:{_uid:q.relicId,rarity:0},reason:e.message};}
- if(stopping)return;if(q.intent&&q.intent!=='score'&&q.intent!=='upgrade-after'){a={requestId:a.requestId,action:a.action,verified:a.verified,averagePotential:a.averagePotential,currentScore:a.currentScore,unlockFirst:a.unlockFirst,targetLevel:a.targetLevel,observation:a.observation,reason:a.reason};}await api('live/decision',a);answeredScores.add(q.requestId);if(q.intent&&q.intent!=='score'&&q.intent!=='upgrade-after')return;if(!imported||!result){imported=E.parse({source:'当前游戏画面',relics:[]});result={rows:[],diagnostics:{scored:0,total:0,protected:0,unscored:0,issues:{}},settings};}const prior=imported.root.relics.findIndex(r=>r._uid===q.relicId);if(prior>=0)imported.root.relics[prior]=a.raw;else imported.root.relics.push(a.raw);const ri=result.rows.findIndex(r=>r.id===q.relicId);if(a.row){if(ri>=0)result.rows[ri]=a.row;else result.rows.push(a.row);}else if(ri>=0)result.rows.splice(ri,1);result.diagnostics.scored=result.rows.filter(r=>r.scores.length).length;result.diagnostics.protected=result.rows.filter(r=>r.status==='review').length;result.diagnostics.unscored=imported.root.relics.filter(r=>r.rarity!==5).length;result.diagnostics.total=imported.root.relics.length;render();}
+ if(stopping)return;if(q.intent&&q.intent!=='score'&&q.intent!=='upgrade-after'){a={requestId:a.requestId,action:a.action,verified:a.verified,averagePotential:a.averagePotential,currentScore:a.currentScore,averageLower:a.averageLower,currentLower:a.currentLower,unlockFirst:a.unlockFirst,targetLevel:a.targetLevel,observation:a.observation,reason:a.reason};}await api('live/decision',a);answeredScores.add(q.requestId);if(q.intent&&q.intent!=='score'&&q.intent!=='upgrade-after')return;if(!imported||!result){imported=E.parse({source:'当前游戏画面',relics:[]});result={rows:[],diagnostics:{scored:0,total:0,protected:0,unscored:0,issues:{}},settings};}const prior=imported.root.relics.findIndex(r=>r._uid===q.relicId);if(prior>=0)imported.root.relics[prior]=a.raw;else imported.root.relics.push(a.raw);const ri=result.rows.findIndex(r=>r.id===q.relicId);if(a.row){if(ri>=0)result.rows[ri]=a.row;else result.rows.push(a.row);}else if(ri>=0)result.rows.splice(ri,1);result.diagnostics.scored=result.rows.filter(r=>r.scores.length).length;result.diagnostics.protected=result.rows.filter(r=>r.status==='review').length;result.diagnostics.unscored=imported.root.relics.filter(r=>r.rarity!==5).length;result.diagnostics.total=imported.root.relics.length;render();}
  function drawMarker(s){if(s.kind==='live'&&s.preview!==true&&Number.isFinite(s.marked)){markedInRun=s.marked;$('low').textContent=s.marked;}running=['starting','running','awaitingScore'].includes(s.state);message(s.message||'正在标记…',running?(s.kind==='live'?(s.preview?'只读评分':s.upgrade?'正在逐次强化':'正在筛选并标记'):'正在强化'):({complete:'已完成',partial:'部分未识别',stopped:'已停止',failed:s.kind==='upgrade'||s.upgrade?'强化失败':'标记失败'}[s.state]||'准备就绪'));if(s.scanned&&s.inventoryCount)$('progress').value=Math.min(1,s.scanned/s.inventoryCount);if(!running)$('progress').value=s.state==='complete'?1:0;controls();}
  async function scoreRequest(s){if(!s.request||answeredScores.has(s.request.requestId))return;if(!upgradePlan)upgradePlan=await api('upgrade/plan');let answer;try{answer=UpgradeFlow.scoreObservation(s.request,upgradePlan);}catch(e){answer={requestId:s.request.requestId,action:'stop',reason:e.message};}if(stopping)return;await api('upgrade/decision',answer);answeredScores.add(s.request.requestId);}
  async function watch(){if(watching)return;watching=true;try{for(;;){const s=await api('marker/status');drawMarker(s);if(running&&s.kind==='upgrade'&&s.request)await scoreRequest(s);if(running&&s.kind==='live'&&s.request)await liveScore(s);if(s.kind==='upgrade'&&!running&&!s.preview&&imported&&(s.confirmedSteps>0||s.marked>0)){imported.captureId=null;result=null;render();}if(!running){if(s.kind==='live'){const saved=await api('live/snapshot');if(saved.data){imported=E.parse(saved.data);imported.captureId=saved.captureId;result=await E.analyze(imported,settings);render();drawMarker(s);}}break;}await new Promise(r=>setTimeout(r,s.kind==='live'?180:1000));}}catch(e){running=false;stopping=true;try{await api('marker/stop',{});}catch{}message(e.message,'操作中断');controls();}finally{watching=false;controls();}}

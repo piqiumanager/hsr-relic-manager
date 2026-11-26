@@ -2,7 +2,7 @@
 
 Windows 简体中文客户端的遗器整理工具。按已收录五星角色的 Fribbels 权重评分，自动标记低分遗器，分解由玩家确认。
 
-**[下载 v1.5.3 测试版：EXE＋中文说明](https://github.com/piqiumanager/hsr-relic-manager/releases/download/v1.5.3/hsr-relic-manager-v1.5.3-windows.zip)** · [发布页](https://github.com/piqiumanager/hsr-relic-manager/releases/tag/v1.5.3)
+**[下载 v1.5.4 测试版：EXE＋中文说明](https://github.com/piqiumanager/hsr-relic-manager/releases/download/v1.5.4/hsr-relic-manager-v1.5.4-windows.zip)** · [发布页](https://github.com/piqiumanager/hsr-relic-manager/releases/tag/v1.5.4)
 
 ZIP 内只有一个 EXE 和说明，模型与背景已内置，无需 Python、Node 或另下素材。
 
@@ -53,9 +53,11 @@ ZIP 内只有一个 EXE 和说明，模型与背景已内置，无需 Python、N
 
 ## 修复与验证
 
-v1.5.3 修复锁定按钮状态识别反向、快照保存崩溃以及出错后状态停留在等待评分的问题。清理与强化共用现场识别、评分和已确认弃置流程；强化后背包重排会重新遍历并更新数量。
+v1.5.4 新增副属性总强化次数校验，识别出的单条数值即使各自合法，总次数不符合等级时也会拒绝。评分回包绑定当前遗器与画面指纹；异常主属性、非有限数值和错误评分类型不能进入执行。强化还需同时核实评分下界达到 80。停止时已送达的评分不能继续执行，未保存完整的记录不能当作完整背包，退出进程会清除过期请求并显示原始错误。
 
-20 组离线回归及 2 组浏览器界面测试通过，包含真实评分代码、文件通信、执行函数、完整模拟背包遍历和逐档强化。**本版尚未完成真实游戏中的解锁、弃置和材料消耗验证，仍为待游戏复测的测试版，不能视为无 BUG 保证。** 详情见 [验证记录](docs/VALIDATION.md)。
+此前已修复锁定按钮状态识别反向、快照保存崩溃以及出错后状态停留在等待评分的问题。清理与强化共用现场识别、评分和已确认弃置流程；强化后背包重排会重新遍历并更新数量。
+
+22 组离线回归及 2 组浏览器界面测试通过，包含真实评分代码、文件通信、执行函数、完整模拟背包遍历和逐档强化。**本版尚未完成真实游戏中的解锁、弃置和材料消耗验证，仍为待游戏复测的测试版，不能视为无 BUG 保证。** 详情见 [验证记录](docs/VALIDATION.md)。
 
 ## 数据与开发
 

@@ -10,9 +10,9 @@ $job=Start-LiveWorker $body
 Assert ($job.kind-eq'live'-and$script:starts-eq 1) 'One-click starts current-screen worker without capture ID'
 Assert ($arguments-match'live.ps1'-and$arguments-match'PreviewOnly'-and$arguments-notmatch'Reliquary') 'Read-only start does not launch login capture'
 $plan=ConvertFrom-Json ([IO.File]::ReadAllText((Join-Path $markerJob.directory 'plan.json'),$utf8));Assert ($plan.maxMarks-eq 3) 'Validation mark limit is passed to worker'
-$request=@{requestId='11111111111111111111111111111111';observation=@{rarity=5;lock=$false;discard=$false;location=''}}
+$request=@{requestId='11111111111111111111111111111111';observation=@{_uid='test';rarity=5;pieceName='synthetic';set_id='117';slot='Head';level=12;mainstat='HP';mainstat_value=587;substats=@(@{key='ATK';value=55},@{key='SPD';value=6},@{key='CRIT DMG';value=5.1},@{key='DEF';value=16});preview_substats=@();lock=$false;discard=$false;location=''}}
 [IO.File]::WriteAllText((Join-Path $markerJob.directory 'request.json'),(Json $request),$utf8)
-$answer=@{requestId=$request.requestId;action='markDiscard';verified=$true;raw=@{};observation=@{level=12};averagePotential=79.9}
+$answer=@{requestId=$request.requestId;action='markDiscard';verified=$true;raw=@{};observation=$request.observation;averagePotential=79.9}
 $result=Accept-LiveDecision $answer;Assert ($result.state-eq'accepted') 'Verified response delivered'
 Assert ($plan.settings.average-eq 80-and$plan.settings.current-eq 80-and$plan.settings.best-eq 0-and-not$plan.unfinishedOnly) 'Old settings cannot restore the former 70/85 cleanup rule'
 $answer.requestId='old';$bad=$false;try{Accept-LiveDecision $answer}catch{$bad=$true};Assert $bad 'Stale response rejected'
