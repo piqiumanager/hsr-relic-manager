@@ -1,9 +1,9 @@
 {
   "website": "https://sr.mihoyo.com/main?nav=character",
   "api": "https://act-api-takumi-static.mihoyo.com/content_v2_user/app/1963de8dc19e461c/getContentList?iChanId=253&iPageSize=999&sLangKey=zh-cn&iPage=1",
-  "retrieved": "2026-11-25",
+  "retrieved": "2026-11-26",
   "copyright": "角色美术版权归米哈游及相关权利人。仅作非商业同人辅助工具界面装饰，素材不适用本项目代码的 AGPL 许可。",
-  "processing": "Official PC PNG artwork resized to 1000 pixels high and encoded as WebP. Display opacity 0.36 is applied only in CSS.",
+  "processing": "Official PNG artwork resized to 1000 pixels high and encoded as WebP. Display opacity is adjustable from 25% to 100%, default 82%.",
   "images": [
     {
       "name": "黄泉",
@@ -301,6 +301,240 @@
       "file": "source/backgrounds/official-124764.webp",
       "originalSha256": "43699e68b97e533b9b3f04c27756295c028107b5de751ef5f9af76a03ba10a98",
       "sha256": "2134b769cd685f9116624758ab800874f63f2e636a634137cf6a842e9b0aed6e"
+    },
+    {
+      "name": "黑天鹅",
+      "id": "official-119494",
+      "infoId": 119494,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/119494/dafcb2fd7681dc15eaf45da15da2dc37_3896112193456082851.png",
+      "file": "source/backgrounds/official-119494.webp",
+      "originalSha256": "aca9f346d5ad3a65447fe6d4c743927a79183e0a0360ad334a7b64f33644a6d5",
+      "sha256": "2f978822a698cd51b8693327bd77d76f510ad02b63c72be7de96d5aa78ac4d9a"
+    },
+    {
+      "name": "花火",
+      "id": "official-119524",
+      "infoId": 119524,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/119524/f4f2058e05a4e388ee938a13eda52626_196683983123479460.png",
+      "file": "source/backgrounds/official-119524.webp",
+      "originalSha256": "73493ec9b5e68aec54a7b3aad5321fbd518681bc9185abc1ec57f3b6753633e6",
+      "sha256": "dcd5baed57284780004292c11c4f171e266e82941d7cd8c54760e555e0885b9d"
+    },
+    {
+      "name": "托帕",
+      "id": "official-113042",
+      "infoId": 113042,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/113042/4c6c51ae6563be2706ecce656fe9b3d4_1397848176836798564.png",
+      "file": "source/backgrounds/official-113042.webp",
+      "originalSha256": "3aa8c1d5c94faec9923f995a1678c4084884afe801eccd6680fa5f1f6db5057a",
+      "sha256": "10f154d305ecdce268926ece70a1691308d39cea52ba1bb0103bf280a9b09ffc"
+    },
+    {
+      "name": "布洛妮娅",
+      "id": "official-101928",
+      "infoId": 101928,
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/79f7c2e15f5e15b1ccd99aabf0059b0f_5352672486640039964.png",
+      "file": "source/backgrounds/official-101928.webp",
+      "originalSha256": "4311e3dcbf45a72422df645a11b60568d48b11d432b96b892202e2c6862e4545",
+      "sha256": "93d0a4953f9aa07ae11f4883530ab90c0e932a7b787e12960785fdd3a693ff8f"
+    },
+    {
+      "name": "希儿",
+      "id": "official-101939",
+      "infoId": 101939,
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/072e2f5910d4cd0e1f18941515b08e20_3207345152407523652.png",
+      "file": "source/backgrounds/official-101939.webp",
+      "originalSha256": "719941162ef6fbb34334f15cff81c68043979fe191b04442bb63e4071d8f5994",
+      "sha256": "2ec54b05b7e9c9e2a495db33707b80b258ce6e5b82681312a5271c42f8d93819"
+    },
+    {
+      "name": "克拉拉",
+      "id": "official-101934",
+      "infoId": 101934,
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/8977cfa5c602e66e809b078e27596ee9_1990773049075791206.png",
+      "file": "source/backgrounds/official-101934.webp",
+      "originalSha256": "4f4433cf76da9aecf35b31835b32b4c009657d39e3203770dd90d3d323a76f3a",
+      "sha256": "71083dc660f7b07dfb9c056228040f8361d1820ef782f3b207ac61386a16dc98"
+    },
+    {
+      "name": "佩拉",
+      "id": "official-101935",
+      "infoId": 101935,
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/18c95307814f85296e8f48f906634c3e_5334888067189241715.png",
+      "file": "source/backgrounds/official-101935.webp",
+      "originalSha256": "9d259efdadb7071dc9388e106f1b98cb618cecbba2a4c44428737410dcc29663",
+      "sha256": "8ca451d6d199d3924cbfd9f2fd4765fb7177a482bbcb3b8d51791d6017f5e8d6"
+    },
+    {
+      "name": "希露瓦",
+      "id": "official-101925",
+      "infoId": 101925,
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/3cbdd202137d4a2dc1d88e150492eff6_555482295809934632.png",
+      "file": "source/backgrounds/official-101925.webp",
+      "originalSha256": "d4ff95f20afca682becaab3ea02e6c4ce0593651d94edcb2e3042a5be80ec8a6",
+      "sha256": "7403f2c1675947f8342033ebc7906be4965e59b4e9e2f0e410230d08a4f249f0"
+    },
+    {
+      "name": "娜塔莎",
+      "id": "official-101923",
+      "infoId": 101923,
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/c454bd4e9c17618639111e50b5ddf9b7_833781430981666547.png",
+      "file": "source/backgrounds/official-101923.webp",
+      "originalSha256": "4d769937cddc070ddc360d75b6afc79c37133358f7bef369e880d90beb0eb39b",
+      "sha256": "0b38508af30e0e24dbe344779ede3e92db1abc7b5943985730ec77d94085ebcb"
+    },
+    {
+      "name": "虎克",
+      "id": "official-102684",
+      "infoId": 102684,
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/b80c2cb2d19de392d5b9e9902715ab23_4379274750955588938.png",
+      "file": "source/backgrounds/official-102684.webp",
+      "originalSha256": "9ad5cb01caff34c524a3d709b5111ceb60dc92bdbe5f9faddce09b6ac0c441e2",
+      "sha256": "c86d537fe29cf8d9e7c8ac872dfa2966f66da30be1731d321b3b5f46c5423b89"
+    },
+    {
+      "name": "玲可",
+      "id": "official-112434",
+      "infoId": 112434,
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/07/27/0ac273b1a83f8d900ba61c3cf409704b_7895481746457040085.png",
+      "file": "source/backgrounds/official-112434.webp",
+      "originalSha256": "f266f7cd6262fb98ea1f5b56ac3c4b343fb1795e2ba3a10a1ae8afafe4add707",
+      "sha256": "89918c158ceebe715026d84ffd05ff19dec614574251540f418335474f3ae49c"
+    },
+    {
+      "name": "艾丝妲",
+      "id": "official-101927",
+      "infoId": 101927,
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/670deaf911c54ab43dd45db789251e90_8942574647496262922.png",
+      "file": "source/backgrounds/official-101927.webp",
+      "originalSha256": "9a85b65862c87d16c0e35a6ab8593d6814496b1ee71efefa48878773606aff8f",
+      "sha256": "b7899abd753fb6027ee90e2803fcbc5010be5a47ac633c49cb08ce2aa56641b3"
+    },
+    {
+      "name": "黑塔",
+      "id": "official-101924",
+      "infoId": 101924,
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/6dd70f4e6bf0d8b8795204081de4bef8_7407743157731440658.png",
+      "file": "source/backgrounds/official-101924.webp",
+      "originalSha256": "f290db5c70b2a4d61f53c6254058f0cf194e6bc37fd3afa15419bd1eaf2cd770",
+      "sha256": "277d42d486af0cd3b62a710604166957d41e34902bc5e19dc50aee0ad3f47ffa"
+    },
+    {
+      "name": "阮•梅",
+      "id": "official-113860",
+      "infoId": 113860,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/113860/26d4f49ba758bf4de3a5b4ed322e442a_6720971018919029136.png",
+      "file": "source/backgrounds/official-113860.webp",
+      "originalSha256": "3b66ea5d431bcd37b75b7d2b5a4efcd8b92e13d4165265a1c3d713bb7ec72588",
+      "sha256": "3123ea2104339753e788e00b86e057d6a6038443f2b80b23016fe81b48c6dfec"
+    },
+    {
+      "name": "银狼",
+      "id": "official-101940",
+      "infoId": 101940,
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/ac698e2d5ea0f66317d189d7697a5d04_1233201386636480873.png",
+      "file": "source/backgrounds/official-101940.webp",
+      "originalSha256": "30e8115b008f95f845fc5b658e38dfa189a5466c79fd2a0306ea0459574901fc",
+      "sha256": "f0620eac6ad84c2f51e50dcfcf09de6322c399d3ba1ba5d2561eefb2cc2366a3"
+    },
+    {
+      "name": "白露",
+      "id": "official-102670",
+      "infoId": 102670,
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/e70210b1e339914842f4a19f6845abf7_237256773028712797.png",
+      "file": "source/backgrounds/official-102670.webp",
+      "originalSha256": "12ce53c201cccba8a659e1e164b4bea0a9b6151e0448519f8f18eeaab4dc1cdc",
+      "sha256": "1dfee85110ef9e6905e425bb16445edc24df7e84e5fb523fc1a26f045c6dbe7e"
+    },
+    {
+      "name": "停云",
+      "id": "official-102666",
+      "infoId": 102666,
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/e9752eadacba0a484e03711bc131bc35_1745879042345552829.png",
+      "file": "source/backgrounds/official-102666.webp",
+      "originalSha256": "5bb17c905ddf4090bac59351a45202f97dc72f3b2511f8c1f51bc80383cb0eb5",
+      "sha256": "cef0e82a32eb6eaf7aab84b6012ad7b3bba58aa384747b32e2562c56c2be10a3"
+    },
+    {
+      "name": "素裳",
+      "id": "official-102638",
+      "infoId": 102638,
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/b80925a0bdde23c2fa8de14b6d500f73_1212515970481491048.png",
+      "file": "source/backgrounds/official-102638.webp",
+      "originalSha256": "8fdabf638d06f68ce183c43fd76ffa81a5c0e037a1f478acb460ccce9b79ce03",
+      "sha256": "da13d4fcf50d8b9bdfbba4423c1194d4418c4056416e451b58f4fef04a0cfb0a"
+    },
+    {
+      "name": "青雀",
+      "id": "official-102667",
+      "infoId": 102667,
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/c3cfdcb612aae02fd7e3e5798c281bc5_3364454656299366746.png",
+      "file": "source/backgrounds/official-102667.webp",
+      "originalSha256": "03f34097f6f8453ab88af9c0b0c49f9480b7dd377ece24be05d2ea8bd26ae09e",
+      "sha256": "3bb15328bcfbdc2bb4ea5654a8710d94577142556f0a93adc39081329a29fb1e"
+    },
+    {
+      "name": "驭空",
+      "id": "official-111714",
+      "infoId": 111714,
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/05/30/9ebe6e54cd621d08fed722c59f4b2118_1886967043748297513.png",
+      "file": "source/backgrounds/official-111714.webp",
+      "originalSha256": "f075c7470fdc299ea23ae81c0888c9e03e03279f2635f31e68e2b22fd77ec52d",
+      "sha256": "fe4e7322067fc4cccb0065b358ba798d03d82bba83f7a5ab50d55fe29d5d2c3a"
+    },
+    {
+      "name": "符玄",
+      "id": "official-112433",
+      "infoId": 112433,
+      "source": "https://webstatic.mihoyo.com/upload/op-public/2023/07/27/2ebd7382caadcdd3fe0f34d6964862de_9037103663964696069.png",
+      "file": "source/backgrounds/official-112433.webp",
+      "originalSha256": "fad1a876d50b71a1f0533556ffde59326024d46bb2c7915739bab04cb70cbb6a",
+      "sha256": "96ab840b550cd4786cd828d63962e56aa1b3b54e8f115258fb8928906ad5c7d9"
+    },
+    {
+      "name": "镜流",
+      "id": "official-113041",
+      "infoId": 113041,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/113041/75ae6e91826dc0c7645c7b577728fd17_6711562189995032786.png",
+      "file": "source/backgrounds/official-113041.webp",
+      "originalSha256": "3b8f3b21a198d62a28df754be3e0a262823adb6ee9ffb9200b7ab5eaf853480c",
+      "sha256": "b12cb85b2a2a5bf8665a868ba519050cd9e5bd87ed868c68ec7aeaef5a72a567"
+    },
+    {
+      "name": "桂乃芬",
+      "id": "official-113043",
+      "infoId": 113043,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/113043/e2b243a2449be5cfd5569439e983399f_4850548560837952501.png",
+      "file": "source/backgrounds/official-113043.webp",
+      "originalSha256": "30c96116f7f6d18e55413cb4f3f5eed01e6e6f4691a304d278ba123c94ee5e45",
+      "sha256": "b545c207dbcb6644e84111c9a118c1ec0a5ff7361fc22b1837480a9d6c28fa75"
+    },
+    {
+      "name": "藿藿",
+      "id": "official-113384",
+      "infoId": 113384,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/113384/eb05068bcb2fcce70b5bc26958876ed8_8587262069659080939.png",
+      "file": "source/backgrounds/official-113384.webp",
+      "originalSha256": "b0d14c684ebc9124513e082456daa73f1f990125ab152e282f5badcf2855143b",
+      "sha256": "ad28ec913d5f7b6831c9584bf997ed46c76894cfb2c2416b0f5e1ef6eabd78a6"
+    },
+    {
+      "name": "寒鸦",
+      "id": "official-113385",
+      "infoId": 113385,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/113385/3057e42a3c55aabbfe9be8f3602b53ea_5586010807771001074.png",
+      "file": "source/backgrounds/official-113385.webp",
+      "originalSha256": "9cd68e79bd0ee10f34cabbb988db0fc5039fb95e785cb1d6fe33b97bf635bd1b",
+      "sha256": "0cadde4bf8a79fc56e75eb53d9b5c839caec7045378bf630da782a6414877b52"
+    },
+    {
+      "name": "雪衣",
+      "id": "official-113864",
+      "infoId": 113864,
+      "source": "https://fastcdn.mihoyo.com/content-v2/hkrpg/113864/8c4dc17b0e89189c45bcc6e1f89e8ef6_6095894999536278223.png",
+      "file": "source/backgrounds/official-113864.webp",
+      "originalSha256": "2b9619c5cf24718f5fb6bdebc459a31eafcd91cb6fbeb9bf835065baff25d61e",
+      "sha256": "68a8258a65050f252c38b12747901a2ccb8e1a71941299f3056c434afbd414e2"
     }
   ]
 }

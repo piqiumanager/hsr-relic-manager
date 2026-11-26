@@ -20,7 +20,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: publish-v1.5.1
+  group: publish-v1.5.2
   cancel-in-progress: false
 
 jobs:
@@ -30,7 +30,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
-      RELEASE_TAG: v1.5.1
+      RELEASE_TAG: v1.5.2
     steps:
       - name: Check out exact source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -68,6 +68,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Plan tests failed' }
           powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-server.ps1
           if ($LASTEXITCODE -ne 0) { throw 'Snapshot validation tests failed' }
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-appearance.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Appearance persistence tests failed' }
           powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-layout.ps1
           if ($LASTEXITCODE -ne 0) { throw 'Layout tests failed' }
           powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-marker-core.ps1
@@ -83,10 +85,10 @@ jobs:
         run: |
           gh release view $env:RELEASE_TAG 2>$null | Out-Null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $env:RELEASE_TAG --target $env:GITHUB_SHA --prerelease --title 'v1.5.1 · 未满级 80 分筛选与新角色背景（测试版）' --notes-file docs/RELEASE_NOTES.md
+            gh release create $env:RELEASE_TAG --target $env:GITHUB_SHA --prerelease --title 'v1.5.2 · 圆角桌面界面与 59 张角色立绘（测试版）' --notes-file docs/RELEASE_NOTES.md
             if ($LASTEXITCODE -ne 0) { throw 'Release creation failed' }
           }
-          gh release upload $env:RELEASE_TAG 'dist/hsr-relic-manager-v1.5.1-windows.zip' 'dist/hsr-relic-manager-v1.5.1.exe' 'dist/SHA256SUMS.txt' --clobber
+          gh release upload $env:RELEASE_TAG 'dist/hsr-relic-manager-v1.5.2-windows.zip' 'dist/hsr-relic-manager-v1.5.2.exe' 'dist/SHA256SUMS.txt' --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Asset upload failed' }
           $assets = gh release view $env:RELEASE_TAG --json assets --jq '.assets[].name'
           if ($assets -contains 'default.exe') {

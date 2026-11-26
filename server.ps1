@@ -32,6 +32,24 @@ function Send-Response($stream, [int]$status, [string]$content, [string]$content
 }
 
 function Json($obj) { return ConvertTo-Json -InputObject $obj -Depth 40 -Compress }
+function ConvertTo-Appearance($Body){
+    if($null-eq$Body.opacity){throw '清晰度无效。'};$opacity=[double]$Body.opacity
+    if([double]::IsNaN($opacity)-or[double]::IsInfinity($opacity)-or$opacity-lt .25-or$opacity-gt 1){throw '清晰度应在 25% 到 100% 之间。'}
+    $id=[string]$Body.lastBackground;$credits=ConvertFrom-Json ([IO.File]::ReadAllText((Join-Path $base 'source/backgrounds/credits.json'),$utf8))
+    if($id-and$id-notin @($credits.images|ForEach-Object{$_.id})){throw '角色图片不存在。'}
+    return @{opacity=$opacity;lastBackground=$id}
+}
+function Get-Appearance {
+    $file=Join-Path $dataBase 'appearance.json'
+    if(Test-Path -LiteralPath $file){try{return ConvertTo-Appearance (ConvertFrom-Json ([IO.File]::ReadAllText($file,$utf8)))}catch{}}
+    return @{opacity=.82;lastBackground=''}
+}
+function Save-Appearance($Body){
+    $value=ConvertTo-Appearance $Body;[IO.Directory]::CreateDirectory($dataBase)|Out-Null
+    $file=Join-Path $dataBase 'appearance.json';$temporary=$file+'.'+[Guid]::NewGuid().ToString('N')+'.tmp'
+    [IO.File]::WriteAllText($temporary,(Json $value),$utf8);Move-Item -LiteralPath $temporary -Destination $file -Force
+    return $value
+}
 function Send-OcrAsset($stream,[string]$Route){
     $name=$Route.Substring(5)
     if($name-notin @('tesseract.min.js','worker.min.js','tesseract-core-lstm.js','tesseract-core-lstm.wasm','eng.traineddata')){Send-Response $stream 404 (Json @{error='资源不存在'});return}
@@ -255,7 +273,7 @@ try {
                 Send-Response $stream 403 (Json @{error='无效主机'})
             } elseif ($route -eq '/' -and $method -eq 'GET') {
                 $html = [System.IO.File]::ReadAllText($pagePath, $utf8)
-                $config = '<script>globalThis.LOCAL_CONFIG={token:"' + $token + '"};</script>'
+                $config = '<script>globalThis.LOCAL_CONFIG={token:"' + $token + '",appearance:'+(Json (Get-Appearance))+'};</script>'
                 $html = $html.Replace('<script>', $config + '<script>')
                 Send-Response $stream 200 $html 'text/html; charset=utf-8'
             } elseif ($route -eq '/favicon.ico') {
@@ -267,6 +285,10 @@ try {
             } elseif ($route.StartsWith('/api/')) {
                 if ($headers['x-relic-token'] -ne $token -or ($headers['origin'] -and $headers['origin'] -ne $origin)) {
                     Send-Response $stream 403 (Json @{error='请求校验失败，请从本机工具页面重试。'})
+                } elseif ($route -eq '/api/appearance' -and $method -eq 'GET') {
+                    Send-Response $stream 200 (Json (Get-Appearance))
+                } elseif ($route -eq '/api/appearance' -and $method -eq 'POST') {
+                    try{Send-Response $stream 200 (Json (Save-Appearance (ConvertFrom-Json $request.body)))}catch{Send-Response $stream 400 (Json @{error=$_.Exception.Message})}
                 } elseif ($route -eq '/api/capture/start' -and $method -eq 'POST') {
                     try { Send-Response $stream 200 (Json (Start-Capture)) } catch { Send-Response $stream 400 (Json @{error=$_.Exception.Message}) }
                 } elseif ($route -eq '/api/capture/status' -and $method -eq 'GET') {
@@ -298,7 +320,7 @@ try {
                     if($script:markerJob){[IO.File]::WriteAllText((Join-Path $script:markerJob.directory 'stop'),'stop',$utf8)}
                     Send-Response $stream 200 (Json @{state='stopping';message='已请求停止，脚本会在下一次输入前停下。'})
                 } elseif ($route -eq '/api/health' -and $method -eq 'GET') {
-                    Send-Response $stream 200 (Json @{state='ok';version='1.5.1';capture='Reliquary v0.20.0';scoring='Fribbels';marker='Chinese Windows OCR'})
+                    Send-Response $stream 200 (Json @{state='ok';version='1.5.2';capture='Reliquary v0.20.0';scoring='Fribbels';marker='Chinese Windows OCR'})
                 } elseif ($route -eq '/api/exit' -and $method -eq 'POST') {
                     Send-Response $stream 200 (Json @{state='closing'})
                     if($script:markerJob){[IO.File]::WriteAllText((Join-Path $script:markerJob.directory 'stop'),'stop',$utf8)}

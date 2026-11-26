@@ -11,5 +11,7 @@ dist/
 node_modules/
 .DS_Store
 Thumbs.db
+appearance.json
+appearance.json.*.tmp
 source/ocr/*.wasm
 source/ocr/*.traineddata

@@ -14,6 +14,7 @@ const first=JSON.parse(fs.readFileSync(path.join(root,'work/upgrade-request-fixt
   let active=false,answers=[],startBody,request=first,complete=false;
   await page.route('**/api/**',async route=>{
    const p=new URL(route.request().url()).pathname,body=()=>route.request().postDataJSON(),reply=v=>route.fulfill({json:v});
+   if(p==='/api/appearance')return route.continue();
    if(p==='/api/capture/latest')return reply({});
    if(p==='/api/capture/start')return reply({state:'starting'});
    if(p==='/api/capture/status')return reply({state:'complete',captureId:'synthetic-capture',data:snapshot});
@@ -30,7 +31,7 @@ const first=JSON.parse(fs.readFileSync(path.join(root,'work/upgrade-request-fixt
   await page.goto(origin);await page.waitForFunction(()=>!!globalThis.RelicDesk);
   assert.equal(await page.locator('html').getAttribute('lang'),'zh-CN');
   await page.waitForFunction(()=>document.getElementById('characterBackground').naturalWidth>0);const initialBackground=await page.evaluate(()=>RelicBackground.selected);
-  assert.equal(await page.evaluate(()=>HSRBackgroundData.length),33);assert.equal(await page.locator('#characterBackground').evaluate(el=>Number(getComputedStyle(el).opacity)),.36);
+  assert.equal(await page.evaluate(()=>HSRBackgroundData.length),59);assert.equal(await page.locator('#characterBackground').evaluate(el=>Number(getComputedStyle(el).opacity)),.82);
   await page.locator('#upgradeModeBtn').click();assert.equal(await page.locator('#markBtn').innerText(),'开始强化');
   assert.match(await page.locator('#rulesSummary').innerText(),/80/);
   await page.evaluate(async snapshot=>{await RelicDesk.loadFile(new File([JSON.stringify(snapshot)],'synthetic.json',{type:'application/json'}));RelicDesk.imported.captureId='synthetic-capture';document.getElementById('mode').dispatchEvent(new Event('change'));},snapshot);await page.waitForFunction(()=>!document.getElementById('markBtn').disabled);

@@ -1,4 +1,4 @@
-绷铁遗器一键分解 v1.5.1，2026-11-25。
+绷铁遗器一键分解 v1.5.2，2026-11-25。
 本工具完整源码随包提供，整体使用 AGPL-3.0 许可。
 Fribbels 评分核心及角色资料：Copyright (c) 2024 Fribbels，MIT License。
 遗器单件名称表：由 Mar-7th/StarRailRes 的 index_min/cn/relics.json 提取（2026-11-23），AGPL-3.0。仅包含 ID、部位和游戏名称，未使用图片或运行时代码。
@@ -7,5 +7,5 @@ Fribbels 评分核心及角色资料：Copyright (c) 2024 Fribbels，MIT License
 
 2026-11-25 v1.3：修复 Scanner 主属性规范化。固定库存区域坐标、A/D/S 蛇形遍历和锁定图标颜色判据参考 kel-z/HSR-Scanner，GPL-3.0，已改为 PowerShell/C# 实现并添加快照核对及弃置状态确认。许可见 HSR-Scanner.txt。来源 commit 见 source/LAYOUT_PROVENANCE.json。
 
-2026-11-25 v1.5.1：加入当前背包读取、离线数字识别和标记前后属性核验；装备边框识别参考同一 HSR-Scanner 提交。离线 OCR 使用 Tesseract.js 7.0.0、Tesseract.js-core 7.0.0 与 tessdata_fast 固定提交，Apache-2.0；依赖地址和校验值见 source/ocr/PROVENANCE.json，许可见本目录对应文件。
+2026-11-25 v1.5.2：加入当前背包读取、离线数字识别和标记前后属性核验；装备边框识别参考同一 HSR-Scanner 提交。离线 OCR 使用 Tesseract.js 7.0.0、Tesseract.js-core 7.0.0 与 tessdata_fast 固定提交，Apache-2.0；依赖地址和校验值见 source/ocr/PROVENANCE.json，许可见本目录对应文件。
 完整构建源码与脚本内置于 EXE 载荷，也可从 https://github.com/piqiumanager/hsr-relic-manager 获取。

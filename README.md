@@ -2,11 +2,17 @@
 
 Windows 简体中文客户端的遗器整理工具。按已收录五星角色的 Fribbels 权重评分，自动标记低分遗器，分解由玩家确认。
 
-**[下载 v1.5.1 测试版：EXE＋中文说明](https://github.com/piqiumanager/hsr-relic-manager/releases/download/v1.5.1/hsr-relic-manager-v1.5.1-windows.zip)** · [发布页](https://github.com/piqiumanager/hsr-relic-manager/releases/tag/v1.5.1)
+**[下载 v1.5.2 测试版：EXE＋中文说明](https://github.com/piqiumanager/hsr-relic-manager/releases/download/v1.5.2/hsr-relic-manager-v1.5.2-windows.zip)** · [发布页](https://github.com/piqiumanager/hsr-relic-manager/releases/tag/v1.5.2)
 
 ZIP 内只有一个 EXE 和说明，模型与背景已内置，无需 Python、Node 或另下素材。
 
 ![主界面，示例背包](docs/preview.png)
+
+## 新界面
+
+紧凑圆角侧栏、两种任务切换、底部固定操作区和右侧角色立绘。评分明细与设置统一重新排版。
+
+![角色背景选择](docs/gallery.png)
 
 ## 一键筛选
 
@@ -31,9 +37,9 @@ ZIP 内只有一个 EXE 和说明，模型与背景已内置，无需 Python、N
 
 ## 角色背景
 
-内置 **33 张女性角色官网立绘**，新增大黑塔、遐蝶、风堇、赛飞儿、海瑟音、刻律德菈、长夜月、昔涟、大丽花、火花、爻光、银狼LV.999、真珠等后续角色。每次启动随机更换，不连续重复。
+内置 **59 张女性角色官网立绘**，本版再补充 26 张，包含镜流、符玄、阮·梅、黑天鹅、花火、银狼、布洛妮娅等。每次启动随机更换，不连续重复；也可在“角色背景”中搜索和选择。
 
-背景不透明度从 18% 提高到 **36%**，人物更清楚。图片从本机读取。完整名单和官网地址见 [credits.json](source/backgrounds/credits.json)。
+右侧清晰立绘与左侧操作分开，默认不透明度 **82%**。点击人物旁的“换一张”切换，在“角色背景”中调节清晰度，选择会保存。图片全部从本机读取。完整名单和官网地址见 [credits.json](source/backgrounds/credits.json)。
 
 ## 强化与测试范围
 

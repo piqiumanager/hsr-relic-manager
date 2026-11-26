@@ -33,7 +33,7 @@ namespace RelicDesktop {
     public DeskForm(string appPath,string rootPath,string[] args){
         app=appPath;root=rootPath;testing=args.Contains("--self-test");report=Value(args,"--report");screenshot=Value(args,"--screenshot");
         int.TryParse(Value(args,"--validation-marks"),out validationMarks);
-        Text="绷铁遗器一键分解 · v1.5.1";StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.None;BackColor=Color.White;
+        Text="绷铁遗器一键分解 · v1.5.2";StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.None;BackColor=Color.White;
         // WinForms dimensions are physical pixels; WebView2 uses device-independent pixels.
         float scale;using(var graphics=CreateGraphics())scale=graphics.DpiX/96f;
         var area=Screen.FromControl(this).WorkingArea;
@@ -115,7 +115,7 @@ namespace RelicDesktop {
     }
     async Task SelfTest(string version){
         try{
-            await view.CoreWebView2.ExecuteScriptAsync("globalThis.__desktopHealth='pending';(async()=>{if(!globalThis.QuickFlow||!globalThis.RelicDesk||!globalThis.UpgradeFlow||!globalThis.LOCAL_CONFIG)throw Error('UI globals missing');const r=await fetch('/api/health',{headers:{'X-Relic-Token':LOCAL_CONFIG.token}});const h=await r.json();if(h.version!=='1.5.1')throw Error('health');if(RelicDesk.settings.average!==80||!RelicDesk.settings.allowUnlockLowPotential||HSRBackgroundData.length!==33)throw Error('cleanup policy or artwork');const m=document.getElementById('mode');m.value='upgrade';m.dispatchEvent(new Event('change'));if(document.getElementById('markBtn').textContent!=='开始强化')throw Error('upgrade mode');if(document.documentElement.lang!=='zh-CN')throw Error('language');globalThis.__desktopHealth='ok';document.getElementById('demoBtn').click();})().catch(e=>globalThis.__desktopHealth=e.message)");
+            await view.CoreWebView2.ExecuteScriptAsync("globalThis.__desktopHealth='pending';(async()=>{if(!globalThis.QuickFlow||!globalThis.RelicDesk||!globalThis.UpgradeFlow||!globalThis.LOCAL_CONFIG)throw Error('UI globals missing');const r=await fetch('/api/health',{headers:{'X-Relic-Token':LOCAL_CONFIG.token}});const h=await r.json();if(h.version!=='1.5.2')throw Error('health');if(RelicDesk.settings.average!==80||!RelicDesk.settings.allowUnlockLowPotential||HSRBackgroundData.length!==59)throw Error('cleanup policy or artwork');const m=document.getElementById('mode');m.value='upgrade';m.dispatchEvent(new Event('change'));if(document.getElementById('markBtn').textContent!=='开始强化')throw Error('upgrade mode');if(document.documentElement.lang!=='zh-CN')throw Error('language');globalThis.__desktopHealth='ok';document.getElementById('demoBtn').click();})().catch(e=>globalThis.__desktopHealth=e.message)");
             // ExecuteScriptAsync doesn't await JavaScript promises; poll a concrete result.
             string demo="";
             for(int i=0;i<100;i++){await Task.Delay(150);demo=await view.CoreWebView2.ExecuteScriptAsync("JSON.stringify({ready:!!RelicDesk.result,count:RelicDesk.result?.rows.length,quick:!!QuickFlow,token:!!LOCAL_CONFIG.token,health:globalThis.__desktopHealth})");if(demo.Contains("112"))break;}
@@ -136,8 +136,8 @@ namespace RelicDesktop {
     async void OnClosing(object sender,FormClosingEventArgs e){
         if(closed)return;e.Cancel=true;if(closing)return;closing=true;
         try{
-            if(view!=null&&view.CoreWebView2!=null)await view.CoreWebView2.ExecuteScriptAsync("fetch('/api/exit',{method:'POST',headers:{'X-Relic-Token':LOCAL_CONFIG.token}}).catch(()=>{});");
-            if(server!=null&&!server.HasExited){await Task.Delay(900);if(!server.HasExited)server.Kill();}
+            if(view!=null&&view.CoreWebView2!=null)await view.CoreWebView2.ExecuteScriptAsync("Promise.resolve(globalThis.RelicBackground?.flush?.()).catch(()=>{}).then(()=>fetch('/api/exit',{method:'POST',headers:{'X-Relic-Token':LOCAL_CONFIG.token}})).catch(()=>{});");
+            if(server!=null&&!server.HasExited){var deadline=DateTime.UtcNow.AddSeconds(3);while(!server.HasExited&&DateTime.UtcNow<deadline)await Task.Delay(100);if(!server.HasExited)server.Kill();}
         }catch{}finally{
             string runs=Path.Combine(root,"data","marker-runs");
             if(Directory.Exists(runs))foreach(var dir in Directory.GetDirectories(runs))try{File.WriteAllText(Path.Combine(dir,"stop"),"desktop closed");}catch{}
