@@ -20,7 +20,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: publish-v1.5.5
+  group: publish-v1.5.6
   cancel-in-progress: false
 
 jobs:
@@ -30,7 +30,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
-      RELEASE_TAG: v1.5.5
+      RELEASE_TAG: v1.5.6
     steps:
       - name: Check out exact source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -58,6 +58,22 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'OCR crash/timeout/cancellation recovery failed' }
           node scripts/test-stress-bridge.cjs
           if ($LASTEXITCODE -ne 0) { throw 'Persistent scorer UTF-8 protocol regression failed' }
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-roster-core.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Roster parser regression failed' }
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-roster-native.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Roster geometry regression failed' }
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-roster-bridge.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Roster API and ownership regression failed' }
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-roster-traversal.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Roster traversal regression failed' }
+          node scripts/live-fixture-bridge.cjs --generate
+          if ($LASTEXITCODE -ne 0) { throw 'Owned scoring fixtures failed' }
+          node scripts/test-universal-speed.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Universal high-speed protection failed' }
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-universal-speed.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Native universal high-speed protection failed' }
+          node scripts/test-roster-flow.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Owned-only scoring regression failed' }
           node scripts/test-live-flow.cjs
           if ($LASTEXITCODE -ne 0) { throw 'Live screen scoring tests failed' }
           node scripts/test-ocr-assets.cjs
@@ -100,10 +116,10 @@ jobs:
         run: |
           gh release view $env:RELEASE_TAG 2>$null | Out-Null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $env:RELEASE_TAG --target $env:GITHUB_SHA --prerelease --title 'v1.5.5 · 完整清理与强化流程回归（待游戏复测）' --notes-file docs/RELEASE_NOTES.md
+            gh release create $env:RELEASE_TAG --target $env:GITHUB_SHA --prerelease --title 'v1.5.6 · 账号五星识别与专属筛选（待游戏复测）' --notes-file docs/RELEASE_NOTES.md
             if ($LASTEXITCODE -ne 0) { throw 'Release creation failed' }
           }
-          gh release upload $env:RELEASE_TAG 'dist/hsr-relic-manager-v1.5.5-windows.zip' 'dist/hsr-relic-manager-v1.5.5.exe' 'dist/SHA256SUMS.txt' --clobber
+          gh release upload $env:RELEASE_TAG 'dist/hsr-relic-manager-v1.5.6-windows.zip' 'dist/hsr-relic-manager-v1.5.6.exe' 'dist/SHA256SUMS.txt' --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Asset upload failed' }
           $assets = gh release view $env:RELEASE_TAG --json assets --jq '.assets[].name'
           if ($assets -contains 'default.exe') {

@@ -4,10 +4,10 @@
     $Body.settings.current=80;$Body.settings.average=80;$Body.settings.best=0
     $id='live-'+(Get-Date -Format 'yyyyMMdd-HHmmss')+'-'+[Guid]::NewGuid().ToString('N').Substring(0,8)
     $dir=Join-Path (Join-Path $dataBase 'marker-runs') $id;[IO.Directory]::CreateDirectory($dir)|Out-Null
-    $file=Join-Path $dir 'plan.json';$characters=@();$saved=Join-Path $dataBase 'captures'
-    if(Test-Path -LiteralPath $saved){$latest=Get-ChildItem -LiteralPath $saved -Filter '*.json' -File|Sort-Object LastWriteTime -Descending|Select-Object -First 1;if($latest){try{$characters=@((ConvertFrom-Json ([IO.File]::ReadAllText($latest.FullName,$utf8))).characters|Where-Object{$null-ne$_})}catch{}}}
-    if($Body.settings.scope-eq'owned'-and$characters.Count-eq 0){throw '没有已拥有角色列表，请在设置中选择全部已收录五星。'}
-    [IO.File]::WriteAllText($file,(Json @{settings=$Body.settings;characters=$characters;maxMarks=$ValidationMarks;unfinishedOnly=$false;averageThreshold=80;currentThreshold=80;allowUnlockLowPotential=$true;upgrade=($Body.upgrade-eq$true-and-not$Body.previewOnly)}),$utf8)
+    $file=Join-Path $dir 'plan.json';$roster=Get-AccountRoster
+    $data=ConvertFrom-Json ([IO.File]::ReadAllText((Join-Path $base 'source/data.json'),$utf8));Assert-AccountRoster $roster $data|Out-Null
+    $Body.settings.scope='owned';$characters=@($roster.characters)
+    [IO.File]::WriteAllText($file,(Json @{settings=$Body.settings;characters=$characters;requireOwned=$true;accountUid=$roster.accountUid;rosterDigest=$roster.digest;maxMarks=$ValidationMarks;unfinishedOnly=$false;averageThreshold=80;currentThreshold=80;allowUnlockLowPotential=$true;upgrade=($Body.upgrade-eq$true-and-not$Body.previewOnly)}),$utf8)
     $args='-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "'+(Join-Path $base 'live.ps1')+'" -JobDirectory "'+$dir+'" -PlanPath "'+$file+'" -DataRoot "'+$dataBase+'"'
     if($Body.previewOnly){$args+=' -PreviewOnly'};if($Body.upgrade-eq$true-and-not$Body.previewOnly){$args+=' -Upgrade'}
     $p=Start-GameWorker $args

@@ -7,7 +7,8 @@ const root=path.resolve(__dirname,'..'),origin=process.env.HSR_TEST_ORIGIN||'htt
  try{
   const page=await browser.newPage({viewport:{width:1000,height:780}}),errors=[],starts=[],answers=[];page.on('pageerror',e=>errors.push(e.message));
   let active=false,index=0,queue=[],finalRaw,terminalState='complete';
-  const request=(raw,n,intent)=>({requestId:String(n).padStart(32,'0'),relicId:'synthetic-upgrade',upgrade:true,intent,pass:1,observation:{...raw,_uid:'synthetic-upgrade'}});
+  const catalog=JSON.parse(fs.readFileSync(path.join(root,'source/data.json'),'utf8')),owned=Object.entries(catalog.charNames).filter(([id,c])=>/^\d+$/.test(id)&&c.rarity===5&&catalog.profiles[id]).map(([id])=>({id}));
+  const request=(raw,n,intent)=>({characters:owned,requireOwned:true,requestId:String(n).padStart(32,'0'),relicId:'synthetic-upgrade',upgrade:true,intent,pass:1,observation:{...raw,_uid:'synthetic-upgrade'}});
   queue=[request(fixtures.high[0],1,'score'),...fixtures.high.slice(1).map((r,i)=>request(r,i+2,'upgrade-after'))];finalRaw=fixtures.high.at(-1);
   await page.route('**/api/**',async route=>{
    const p=new URL(route.request().url()).pathname,reply=json=>route.fulfill({json});

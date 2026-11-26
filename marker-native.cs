@@ -152,6 +152,27 @@ public static class RelicNative {
     for(int i=0;i<4;i++)if(Math.Abs(centers[i].Y-centers[0].Y)>18||Math.Abs(centers[i+4].Y-centers[4].Y)>18)return -1;
     if(centers[4].Y-centers[0].Y<50)return -1;return 8;
   }
+  // Only the character portrait rail may be dragged; release even after a focus/cancel failure.
+  public static void DragRosterBar(RelicWindow w,bool forward) {
+    int start=forward?1360:700,end=forward?700:1040;Guard(w);SetCursorPos(w.X+start,w.Y+65);Thread.Sleep(35);Guard(w);
+    var down=new INPUT[1];down[0].u.mouse.dwFlags=2;var up=new INPUT[1];up[0].u.mouse.dwFlags=4;
+    if(SendInput(1,down,Marshal.SizeOf(typeof(INPUT)))!=1)throw new Exception("角色顶栏拖动未按下。");
+    uint released=0;try{for(int i=1;i<=25;i++){Guard(w);SetCursorPos(w.X+start+(end-start)*i/25,w.Y+65);Thread.Sleep(20);}Thread.Sleep(300);}finally{released=SendInput(1,up,Marshal.SizeOf(typeof(INPUT)));}
+    if(released!=1)throw new Exception("角色顶栏拖动未释放。");Guard(w);
+  }
+  static double RosterLight(Bitmap b,int x,int y){var p=b.GetPixel(x,y);return (p.R*3+p.G*6+p.B)/10.0;}
+  public static int[] RosterAvatarSlots(Bitmap b){
+    if(b.Width!=1920||b.Height!=1080)throw new Exception("角色顶栏分辨率不符合 1920×1080。");
+    var peaks=new List<Tuple<int,double>>();
+    for(int x=470;x<=1440;x+=2){double best=0;
+      for(int cy=63;cy<=67;cy+=2)for(int r=29;r<=45;r+=2){int edges=0;
+        for(int n=0;n<48;n++){double angle=n*Math.PI/24,dx=Math.Cos(angle),dy=Math.Sin(angle);double a=RosterLight(b,x+(int)Math.Round((r-2)*dx),cy+(int)Math.Round((r-2)*dy));double c=RosterLight(b,x+(int)Math.Round((r+2)*dx),cy+(int)Math.Round((r+2)*dy));if(Math.Abs(a-c)>23)edges++;}
+        best=Math.Max(best,edges/48.0);
+      }
+      if(best>=.52)peaks.Add(Tuple.Create(x,best));
+    }
+    peaks.Sort((a,c)=>c.Item2.CompareTo(a.Item2));var slots=new List<int>();foreach(var p in peaks)if(!slots.Exists(x=>Math.Abs(x-p.Item1)<65))slots.Add(p.Item1);slots.Sort();return slots.ToArray();
+  }
   public static void ScrollDown(RelicWindow w,int x,int y) { SendMouse(w,x,y,0x0800,unchecked((uint)-120)); }
   public static void ScrollToTop(RelicWindow w,int x,int y) { for(int i=0;i<12;i++){SendMouse(w,x,y,0x0800,12000);Thread.Sleep(20);} }
   public static Bitmap Crop(Bitmap b,int x,int y,int width,int height) {

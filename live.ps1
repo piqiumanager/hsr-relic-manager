@@ -38,7 +38,7 @@ function Save-LiveEvidence($Bitmap,[string]$Stage){
 }
 function Ask-LiveScore($Observation,[string]$Intent='score'){
     Check-Stop
-    $request=@{requestId=[Guid]::NewGuid().ToString('N');relicId=$Observation._uid;observation=$Observation;characters=@($plan.characters);intent=$Intent;pass=$state.passes;upgrade=($plan.upgrade-eq$true-and-not$PreviewOnly)}
+    $request=@{requestId=[Guid]::NewGuid().ToString('N');relicId=$Observation._uid;observation=$Observation;characters=@($plan.characters);requireOwned=($plan.requireOwned-eq$true);intent=$Intent;pass=$state.passes;upgrade=($plan.upgrade-eq$true-and-not$PreviewOnly)}
     $script:state.request=$request;[IO.File]::WriteAllText((Join-Path $JobDirectory 'request.json'),(ConvertTo-Json $request -Depth 20 -Compress),$utf8)
     Save-State 'awaitingScore' ('正在评分 '+$state.scanned+'/'+$state.inventoryCount+'，已标记 '+$state.marked+'，已跳过 '+$state.skipped+'。')
     $file=Join-Path $JobDirectory ('decision-'+$request.requestId+'.json');$deadline=(Get-Date).AddSeconds(45)
@@ -97,7 +97,7 @@ function Upgrade-LiveRelic($Initial,[int]$RecordIndex){
     for($step=0;$step-lt 6;$step++){
       Check-Stop
       if($answer.action-eq'markDiscard'){$script:state.matched++;$script:state.lastDecision=$answer.reason;Mark-LiveRelic $answer.observation $answer.observation $answer.raw;$answer.raw.discard=$true;$script:records[$RecordIndex]=$answer.raw;Save-Snapshot;return}
-      if($answer.action-eq'keep'-and$answer.observation.level-eq 15){$script:state.kept++;return}
+      if($answer.action-eq'keep'-and($answer.observation.level-eq 15-or(Test-LiveUniversalSpeedProtection $answer.observation))){$script:state.kept++;return}
       if($answer.action-ne'enhance'-or$answer.verified-ne$true){throw ('强化后未得到可执行评分：'+$answer.reason)}
       $expected=$answer.observation;$target=[int]$answer.targetLevel
       if(-not(Check-Inventory)){throw '强化前已离开背包。'}
@@ -191,13 +191,16 @@ try{
     [IO.Directory]::CreateDirectory($JobDirectory)|Out-Null;Save-State 'starting' '正在连接当前游戏，无需重新登录。'
     Add-Type -AssemblyName System.Drawing;Add-Type -AssemblyName System.Windows.Forms
     Add-Type -Path (Join-Path $base 'marker-native.cs') -ReferencedAssemblies System.Drawing,System.Windows.Forms
-    . (Join-Path $base 'marker-core.ps1');. (Join-Path $base 'layout-1080.ps1');. (Join-Path $base 'live-core.ps1');. (Join-Path $base 'upgrade-core.ps1');. (Join-Path $base 'enhancement-actions.ps1')
+    . (Join-Path $base 'marker-core.ps1');. (Join-Path $base 'layout-1080.ps1');. (Join-Path $base 'live-core.ps1');. (Join-Path $base 'upgrade-core.ps1');. (Join-Path $base 'enhancement-actions.ps1');. (Join-Path $base 'roster-core.ps1');. (Join-Path $base 'roster-navigation.ps1')
     [RelicNative]::SetProcessDPIAware()|Out-Null;Initialize-MarkerOcr
     $window=[RelicNative]::FindGame();$layout=Get-RelicLayout1080 $window.Width $window.Height
     $plan=ConvertFrom-Json ([IO.File]::ReadAllText($PlanPath,$utf8));$data=ConvertFrom-Json ([IO.File]::ReadAllText((Join-Path $base 'source/data.json'),$utf8))
     if(($plan.upgrade-eq$true)-ne[bool]$Upgrade){throw '强化任务参数不一致。'}
     $materialHeader=@{x=1320;y=450;width=575;height=230};$materialSlots=@{x=1330;y=650;width=565;height=295};$rulesRegion=@{x=950;y=180;width=940;height=800};$levelRow=@{x=1350;y=115;width=545;height=80}
     [RelicNative]::Activate($window)
+    if($plan.requireOwned-ne$true-or$plan.settings.scope-ne'owned'-or@($plan.characters).Count-lt 1){throw '当前账号五星名单未就绪。'}
+    if($plan.rosterDigest-cne(Get-RosterDigest $plan.accountUid $plan.characters)){throw '账号名单校验不通过。'}
+    Assert-RosterAccount $plan.accountUid
     if(-not(Check-Inventory)){[RelicNative]::TapNavigation($window,'B');Start-Sleep -Milliseconds 1300}
     if(-not(Check-Inventory)){throw '没有识别到背包，请退出对话或菜单后重试。'}
     [RelicNative]::ClickGrid($window,$layout.relicTab[0],$layout.relicTab[1]);Start-Sleep -Milliseconds 450

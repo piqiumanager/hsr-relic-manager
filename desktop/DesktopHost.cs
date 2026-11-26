@@ -33,7 +33,7 @@ namespace RelicDesktop {
     public DeskForm(string appPath,string rootPath,string[] args){
         app=appPath;root=rootPath;testing=args.Contains("--self-test");report=Value(args,"--report");screenshot=Value(args,"--screenshot");
         int.TryParse(Value(args,"--validation-marks"),out validationMarks);
-        Text="绷铁遗器一键分解 · v1.5.5";StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.None;BackColor=Color.White;
+        Text="绷铁遗器一键分解 · v1.5.6";StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.None;BackColor=Color.White;
         // WinForms dimensions are physical pixels; WebView2 uses device-independent pixels.
         float scale;using(var graphics=CreateGraphics())scale=graphics.DpiX/96f;
         var area=Screen.FromControl(this).WorkingArea;
@@ -115,7 +115,7 @@ namespace RelicDesktop {
     }
     async Task SelfTest(string version){
         try{
-            await view.CoreWebView2.ExecuteScriptAsync("globalThis.__desktopHealth='pending';(async()=>{if(!globalThis.QuickFlow||!globalThis.RelicDesk||!globalThis.UpgradeFlow||!globalThis.LOCAL_CONFIG)throw Error('UI globals missing');const r=await fetch('/api/health',{headers:{'X-Relic-Token':LOCAL_CONFIG.token}});const h=await r.json();if(h.version!=='1.5.5')throw Error('health');if(RelicDesk.settings.average!==80||!RelicDesk.settings.allowUnlockLowPotential||HSRBackgroundData.length!==59)throw Error('cleanup policy or artwork');const m=document.getElementById('mode');m.value='upgrade';m.dispatchEvent(new Event('change'));if(document.getElementById('markBtn').textContent!=='开始强化并弃置')throw Error('upgrade mode');if(document.documentElement.lang!=='zh-CN')throw Error('language');globalThis.__desktopHealth='ok';document.getElementById('demoBtn').click();})().catch(e=>globalThis.__desktopHealth=e.message)");
+            await view.CoreWebView2.ExecuteScriptAsync("globalThis.__desktopHealth='pending';(async()=>{if(!globalThis.AccountRoster||document.getElementById('galleryBtn')||!document.getElementById('rosterBtn')||!globalThis.RelicDesk||!globalThis.UpgradeFlow||!globalThis.LOCAL_CONFIG)throw Error('UI globals missing');const r=await fetch('/api/health',{headers:{'X-Relic-Token':LOCAL_CONFIG.token}});const h=await r.json();if(h.version!=='1.5.6')throw Error('health');if(RelicDesk.settings.average!==80||!RelicDesk.settings.allowUnlockLowPotential||HSRBackgroundData.length!==59)throw Error('cleanup policy or artwork');const m=document.getElementById('mode');m.value='upgrade';m.dispatchEvent(new Event('change'));if(document.getElementById('markBtn').textContent!=='开始强化并弃置')throw Error('upgrade mode');if(document.documentElement.lang!=='zh-CN')throw Error('language');globalThis.__desktopHealth='ok';document.getElementById('demoBtn').click();})().catch(e=>globalThis.__desktopHealth=e.message)");
             // ExecuteScriptAsync doesn't await JavaScript promises; poll a concrete result.
             string demo="";
             for(int i=0;i<100;i++){await Task.Delay(150);demo=await view.CoreWebView2.ExecuteScriptAsync("JSON.stringify({ready:!!RelicDesk.result,count:RelicDesk.result?.rows.length,quick:!!QuickFlow,token:!!LOCAL_CONFIG.token,health:globalThis.__desktopHealth})");if(demo.Contains("112"))break;}

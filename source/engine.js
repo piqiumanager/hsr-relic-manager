@@ -52,6 +52,15 @@ globalThis.RelicEngine = (() => {
     const scoringIssues=issues.filter(s=>!protectionIssues.includes(s));
     return {id:String(raw._uid??raw.id??`row-${index+1}`),index,grade,enhance,part:p||'Unknown',setId:set?.id||setRaw,set:set?.en||setRaw,setName:set?.name||setRaw||'未知套装',main:{stat:mainStat,value:Number.isFinite(mainValue)?mainValue:calculatedMain?calculatedMain.base+calculatedMain.increment*enhance:null},substats:subs,previewSubstats:preview,locked,discarded,owner,issues:[...new Set(issues)],scoringIssues,raw};
   }
+  function universalProtection(r){
+    if(String(r.setId)!=='110'||r.issues.length||!Number.isInteger(r.enhance)||r.enhance<0||r.enhance>15)return null;
+    if(r.part==='Feet'&&r.main.stat==='SPD')return{kind:'speed-boots',reason:'风套速度鞋，通用高速保护'};
+    const speed=r.substats.find(s=>s.stat==='SPD');if(!speed||!Number.isFinite(speed.value)||speed.value<=0)return null;
+    const visible=Math.floor(speed.value+1e-5);if(visible>=10)return{kind:'high-speed',reason:'风套副速度 ≥10，通用高速保护'};
+    const rolls=5-Math.floor(r.enhance/3)-(r.substats.length===3?1:0),ceiling=visible+.999+Math.max(0,rolls)*C.SubStatValues.SPD[5].high;
+    if(r.enhance<15&&ceiling>=10)return{kind:'speed-embryo',reason:'风套速度胚子仍可能达到副速度 10，保护并待复核'};
+    return null;
+  }
   function parse(input){
     let root=typeof input==='string'?JSON.parse(input.replace(/^\uFEFF/,'')):input;
     if(!root||typeof root!=='object'||Array.isArray(root))throw Error('请选择 Reliquary、HSR Scanner 或 Fribbels 导出的完整 JSON 文件。');
@@ -123,7 +132,8 @@ globalThis.RelicEngine = (() => {
       if(status==='discard'&&missing.length){status='review';reasons.push('账号中有未收录的五星角色，暂缓清理');}
       if(status==='discard'&&cfg.protectEquipped&&r.owner){status='review';reasons.push('低分但已装备，待你复核');}
       if(status==='discard'&&cfg.protectLocked&&r.locked){status='review';reasons.push('低分但已锁定，待你复核');}
-      rows.push({...r,status,reasons,best,scores,qualifies:qualifies.map(s=>s.id),manual:null});
+      const protection=universalProtection(r);if(protection){reasons.push(protection.reason);if(status==='discard')status='keep';}
+      rows.push({...r,status,reasons,best,scores,universalProtection:protection,qualifies:qualifies.map(s=>s.id),manual:null});
       if(i%45===0){onProgress(i/imported.relics.length);await new Promise(resolve=>setTimeout(resolve,0));}
     }
     if(cfg.reserve>0){
@@ -184,5 +194,5 @@ globalThis.RelicEngine = (() => {
     if(!candidates.length)throw Error('没有可自动标记的候选：已锁定、已装备、状态不明或已弃置的遗器不会再次点击。');
     return {schema:'hsr-marker-plan-v1',captureId:imported.captureId,createdAt:new Date().toISOString(),candidates,inventoryCount:list(imported.root.relics).length,total:candidates.reduce((n,x)=>n+x.count,0),skips,allowSalvage:false};
   }
-  return{PARTS,STAT_ZH,PRESETS,DEFAULTS,parse,analyze,evaluate,metadata,targets,status,exportResults,demo,settingsValid,cleanupSettings,markerFingerprint,buildMarkPlan};
+  return{PARTS,STAT_ZH,PRESETS,DEFAULTS,parse,analyze,evaluate,metadata,targets,status,exportResults,demo,settingsValid,cleanupSettings,markerFingerprint,buildMarkPlan,universalProtection};
 })();

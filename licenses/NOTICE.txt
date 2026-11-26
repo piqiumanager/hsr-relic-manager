@@ -9,3 +9,5 @@ Fribbels 评分核心及角色资料：Copyright (c) 2024 Fribbels，MIT License
 
 2026-11-25 v1.5.2：加入当前背包读取、离线数字识别和标记前后属性核验；装备边框识别参考同一 HSR-Scanner 提交。离线 OCR 使用 Tesseract.js 7.0.0、Tesseract.js-core 7.0.0 与 tessdata_fast 固定提交，Apache-2.0；依赖地址和校验值见 source/ocr/PROVENANCE.json，许可见本目录对应文件。
 完整构建源码与脚本内置于 EXE 载荷，也可从 https://github.com/piqiumanager/hsr-relic-manager 获取。
+
+2026-11-26 v1.5.6：角色顶栏遍历方式、1920×1080 参考区域、主角信息辨认依据参考 moesnow/March7thAssistant 的 character_export（GPL-3.0）。本工具以 PowerShell/C# 独立实现账号名单读取，并增加 UID 绑定、名单完整性校验与只按已有五星执行的限制。参考文件和源码树见 source/ROSTER_PROVENANCE.json。许可全文见 March7-GPL-3.0.txt。

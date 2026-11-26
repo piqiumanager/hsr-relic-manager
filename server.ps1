@@ -18,6 +18,8 @@ $lastRequest = Get-Date
 . (Join-Path $base 'marker-core.ps1')
 . (Join-Path $base 'live-core.ps1')
 . (Join-Path $base 'live-server.ps1')
+. (Join-Path $base 'roster-core.ps1')
+. (Join-Path $base 'roster-server.ps1')
 $releaseUrl = 'https://github.com/IceDynamix/reliquary-archiver/releases/download/v0.20.0/reliquary-archiver-pktmon-x64.exe'
 $expectedHash = 'ce4a5bb00ba0c3d681772d9151ac2332934dd1b497926c3d7994f40c2a94cd9d'
 
@@ -285,7 +287,7 @@ try {
                 Send-Response $stream 403 (Json @{error='无效主机'})
             } elseif ($route -eq '/' -and $method -eq 'GET') {
                 $html = [System.IO.File]::ReadAllText($pagePath, $utf8)
-                $config = '<script>globalThis.LOCAL_CONFIG={token:"' + $token + '",appearance:'+(Json (Get-Appearance))+'};</script>'
+                $config = '<script>globalThis.LOCAL_CONFIG={token:"' + $token + '",appearance:'+(Json (Get-Appearance))+',roster:'+(Json (Get-AccountRoster))+'};</script>'
                 $html = $html.Replace('<script>', $config + '<script>')
                 Send-Response $stream 200 $html 'text/html; charset=utf-8'
             } elseif ($route -eq '/favicon.ico') {
@@ -297,6 +299,10 @@ try {
             } elseif ($route.StartsWith('/api/')) {
                 if ($headers['x-relic-token'] -ne $token -or ($headers['origin'] -and $headers['origin'] -ne $origin)) {
                     Send-Response $stream 403 (Json @{error='请求校验失败，请从本机工具页面重试。'})
+                } elseif ($route -eq '/api/roster' -and $method -eq 'GET') {
+                    Send-Response $stream 200 (Json (Get-AccountRoster))
+                } elseif ($route -eq '/api/roster/start' -and $method -eq 'POST') {
+                    try{Send-Response $stream 200 (Json (Start-AccountRoster))}catch{Send-Response $stream 400 (Json @{error=$_.Exception.Message})}
                 } elseif ($route -eq '/api/appearance' -and $method -eq 'GET') {
                     Send-Response $stream 200 (Json (Get-Appearance))
                 } elseif ($route -eq '/api/appearance' -and $method -eq 'POST') {
@@ -321,9 +327,9 @@ try {
                 } elseif ($route -eq '/api/marker/calibrate' -and $method -eq 'POST') {
                     try{Send-Response $stream 200 (Json (Start-MarkerWorker 'Calibrate' $null $false))}catch{Send-Response $stream 400 (Json @{error=$_.Exception.Message})}
                 } elseif ($route -eq '/api/marker/start' -and $method -eq 'POST') {
-                    try{$body=ConvertFrom-Json $request.body;Validate-MarkerPlan $body.plan|Out-Null;Send-Response $stream 200 (Json (Start-MarkerWorker 'Run' $body.plan ([bool]$body.previewOnly)))}catch{Send-Response $stream 400 (Json @{error=$_.Exception.Message})}
+                    try{throw '请使用当前账号的“开始筛选并标记”，旧快照执行入口已停用。'}catch{Send-Response $stream 400 (Json @{error=$_.Exception.Message})}
                 } elseif ($route -eq '/api/upgrade/start' -and $method -eq 'POST') {
-                    try{$body=ConvertFrom-Json $request.body;Validate-UpgradePlan $body.plan|Out-Null;Send-Response $stream 200 (Json (Start-MarkerWorker 'Upgrade' $body.plan ([bool]$body.previewOnly)))}catch{Send-Response $stream 400 (Json @{error=$_.Exception.Message})}
+                    try{throw '请使用当前账号的“开始强化并弃置”，旧快照执行入口已停用。'}catch{Send-Response $stream 400 (Json @{error=$_.Exception.Message})}
                 } elseif ($route -eq '/api/upgrade/plan' -and $method -eq 'GET') {
                     if($script:markerJob -and $script:markerJob.kind -eq 'upgrade'){Send-Response $stream 200 ([IO.File]::ReadAllText((Join-Path $script:markerJob.directory 'plan.json'),$utf8))}else{Send-Response $stream 404 (Json @{error='没有运行中的强化任务。'})}
                 } elseif ($route -eq '/api/upgrade/decision' -and $method -eq 'POST') {
@@ -332,7 +338,7 @@ try {
                     if($script:markerJob){[IO.File]::WriteAllText((Join-Path $script:markerJob.directory 'stop'),'stop',$utf8)}
                     Send-Response $stream 200 (Json @{state='stopping';message='已请求停止，脚本会在下一次输入前停下。'})
                 } elseif ($route -eq '/api/health' -and $method -eq 'GET') {
-                    Send-Response $stream 200 (Json @{state='ok';version='1.5.5';capture='Reliquary v0.20.0';scoring='Fribbels';marker='Chinese Windows OCR'})
+                    Send-Response $stream 200 (Json @{state='ok';version='1.5.6';capture='Reliquary v0.20.0';scoring='Fribbels';marker='Chinese Windows OCR'})
                 } elseif ($route -eq '/api/exit' -and $method -eq 'POST') {
                     Send-Response $stream 200 (Json @{state='closing'})
                     if($script:markerJob){[IO.File]::WriteAllText((Join-Path $script:markerJob.directory 'stop'),'stop',$utf8)}

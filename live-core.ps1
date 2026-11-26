@@ -30,11 +30,24 @@ function Get-LiveInventoryCount($Lines){
     if($text-match'遗器数量([0-9]{1,4})/3000'){$count=[int]$Matches[1];if($count-gt 3000){throw '遗器数量超过容量，识别无效。'};return $count}
     throw '未识别到遗器总数，请打开遗器背包。'
 }
+function Test-LiveUniversalSpeedProtection($O){
+    if([string]$O.set_id-cne'110'-or-not(Test-LiveNumber $O.level)-or$O.level-lt 0-or$O.level-gt 15){return $false}
+    if($O.slot-ceq'Feet'-and$O.mainstat-ceq'SPD'){return $true}
+    $spd=@($O.substats|Where-Object{$_.key-ceq'SPD'});if($spd.Count-ne 1-or-not(Test-LiveNumber $spd[0].value)-or$spd[0].value-le 0){return $false}
+    $visible=[Math]::Floor($spd[0].value+.00001);if($visible-ge 10){return $true}
+    $rolls=5-[Math]::Floor($O.level/3)-$(if(@($O.substats).Count-eq 3){1}else{0})
+    return ($O.level-lt 15-and$visible+.999+[Math]::Max(0,$rolls)*2.6-ge 10)
+}
 function Assert-LiveDecision($Request,$Decision,[bool]$AllowUnlockLowPotential=$false,[bool]$AllowEnhance=$false){
     if($Request.requestId-ne$Decision.requestId){throw '当前遗器的评分回应已过期。'}
     if($Decision.action-notin @('keep','skip','markDiscard','stop','enhance')){throw '未知现场评分决策。'}
+    if($Request.requireOwned-eq$true-and$Decision.action-in @('markDiscard','enhance')){
+        $allowed=@($Request.characters|ForEach-Object{[string]$_.id});$target=([string]$Decision.targetCharacterId)-replace 'b1$',''
+        if(-not$target-or$target-notin$allowed){throw '执行评分使用了账号未拥有的角色，已拒绝。'}
+    }
     if($Decision.action-in @('markDiscard','enhance')){Assert-LiveObservation $Request.observation $Decision.observation|Out-Null}
     if($Decision.action-eq'markDiscard'){
+        if(Test-LiveUniversalSpeedProtection $Decision.observation){throw '风套高速保护：禁止解锁并标记弃置。'}
         $r=$Request.observation
         $lockAllowed=$r.lock-eq$false-or($r.lock-eq$true-and$Decision.unlockFirst-eq$true-and$AllowUnlockLowPotential)
         if($r.rarity-ne 5-or-not$lockAllowed-or$r.discard-ne$false-or$r.location-cne''-or$Decision.verified-ne$true){throw '当前遗器受保护或评分未核实。'}

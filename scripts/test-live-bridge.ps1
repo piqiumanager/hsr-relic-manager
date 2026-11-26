@@ -1,10 +1,11 @@
 ﻿$ErrorActionPreference='Stop';$root=Split-Path $PSScriptRoot -Parent;$utf8=New-Object Text.UTF8Encoding($false)
-. (Join-Path $root 'live-core.ps1');. (Join-Path $root 'live-server.ps1')
+. (Join-Path $root 'roster-core.ps1');. (Join-Path $root 'roster-server.ps1');. (Join-Path $root 'live-core.ps1');. (Join-Path $root 'live-server.ps1')
 $dataBase=Join-Path $root ('work/live-bridge-'+[Guid]::NewGuid().ToString('N'));$base=$root;$ValidationMarks=3;$script:starts=0;$script:checks=0
 function Json($v){ConvertTo-Json $v -Depth 30 -Compress}
 function Assert($v,$name){if(-not$v){throw $name};$script:checks++}
 function Assert-MarkerIdle {}
 function Start-GameWorker($arguments){$script:starts++;$script:arguments=$arguments;return [pscustomobject]@{HasExited=$false}}
+$chars=@(@{id='1003';rarity=5});[IO.Directory]::CreateDirectory($dataBase)|Out-Null;[IO.File]::WriteAllText((Join-Path $dataBase 'account-roster.json'),(Json @{state='complete';complete=$true;source='game-character-ocr';accountUid='900000001';characters=$chars;visitedCount=1;digest=(Get-RosterDigest '900000001' $chars)}),$utf8)
 $body=@{settings=@{current=75;average=70;best=85;scope='all'};previewOnly=$true}
 $job=Start-LiveWorker $body
 Assert ($job.kind-eq'live'-and$script:starts-eq 1) 'One-click starts current-screen worker without capture ID'
@@ -27,5 +28,6 @@ $raw.metadata.unrecognized=1;[IO.File]::WriteAllText((Join-Path $markerJob.direc
 $snapshot=ConvertFrom-Json (Get-LiveSnapshot);Assert ($snapshot.state-eq'partial'-and-not$snapshot.captureId) 'Unrecognized items cannot authorize enhancement even after full traversal'
 $body.upgrade=$true;$body.previewOnly=$false;Start-LiveWorker $body|Out-Null
 Assert ($arguments-match' -Upgrade'-and$markerJob.upgrade-eq$true) 'Enhancement starts without a complete inventory snapshot'
+[IO.File]::WriteAllText((Join-Path $dataBase 'account-roster.json'),(Json @{state='empty';complete=$false;characters=@()}),$utf8)
 $body.settings.scope='owned';$starts=$script:starts;$bad=$false;try{Start-LiveWorker $body}catch{$bad=$true};Assert ($bad-and$script:starts-eq$starts) 'Missing owned roster rejected before worker launch'
 Write-Output ('Live API/IPC checks passed: '+$script:checks+'; worker launches are mocked, real game input: 0')

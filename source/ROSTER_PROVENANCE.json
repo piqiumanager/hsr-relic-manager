@@ -1,0 +1,11 @@
+{
+  "date": "2026-11-26",
+  "reference": "https://github.com/moesnow/March7thAssistant",
+  "commit": "65d7cf3c41f8f10079c460dd8cca6bddefa2307e",
+  "files": ["tasks/character_export/reader.py", "tasks/character_export/parser.py", "tasks/character_export/__init__.py", "assets/config/screens.json"],
+  "license": "GPL-3.0",
+  "usedFor": ["1920x1080 character detail region and portrait rail layout", "overlapping portrait pages", "protagonist information text identity"],
+  "implementation": "Independent PowerShell and C# reader using Windows Simplified Chinese OCR. No Python runtime or March7th executable included.",
+  "added": ["account UID binding", "complete owned-five-star roster persistence", "refresh invalidation", "owned-only cleanup and enhancement", "native target-character and universal-speed gates"],
+  "validation": "Synthetic offline models, generated Chinese OCR images and mocked browser flows; live game verification pending."
+}
