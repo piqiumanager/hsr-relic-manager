@@ -30,6 +30,7 @@ globalThis.RelicEngine = (() => {
     const subs=toSubs(raw.substats),preview=toSubs(raw.preview_substats??raw.previewSubstats??[]);
     if(!p)issues.push('无法识别部位');
     if(!set)issues.push('套装未收录');
+    if(set&&p&&D.pieceNames?.[set.id]&&!D.pieceNames[set.id][p])issues.push('套装与部位不匹配');
     if(!Number.isInteger(enhance)||enhance<0||enhance>15)issues.push('强化等级不完整');
     if(!C.PartsMainStats[p]?.includes(mainStat))issues.push('主属性与部位不匹配');
     if(subs.length<3||subs.length>4||subs.length+preview.length>4)issues.push('副属性数量不完整');
@@ -38,7 +39,7 @@ globalThis.RelicEngine = (() => {
     if(all.some(s=>!C.SubStats.includes(s.stat)||!Number.isFinite(s.value)||s.value<=0))issues.push('副属性值无法识别');
     if(new Set(all.map(s=>s.stat)).size!==all.length||all.some(s=>s.stat===mainStat))issues.push('主副属性有重复');
     const ownerRaw=Object.hasOwn(raw,'location')?raw.location:raw.equippedBy;
-    const owner=ownerRaw===undefined||ownerRaw===null?null:String(ownerRaw||'');
+    const owner=ownerRaw===undefined||ownerRaw===null||ownerRaw==='live-protected-footer'?null:String(ownerRaw||'');
     const locked=flag(raw.lock??raw.locked),discarded=flag(raw.discard??raw.discarded);
     if(locked===null)issues.push('锁定状态未知');
     if(owner===null)issues.push('装备状态未知');
@@ -149,7 +150,7 @@ globalThis.RelicEngine = (() => {
       const level=[0,3,6,9,12,15][Math.floor(random()*6)];if(level===0&&i%2)chosen=chosen.slice(0,3);
       const values=chosen.map(s=>({key:s,value:C.SubStatValues[s][5].high}));
       for(let u=0;u<Math.floor(level/3)-(chosen.length===3?1:0);u++){let j=quality===0?Math.floor(random()*Math.min(2,values.length)):Math.floor(random()*values.length);values[j].value+=C.SubStatValues[values[j].key][5].high;}
-      const set=Object.values(D.sets).find(x=>p.sets.includes(x.en)&&((pt==='PlanarSphere'||pt==='LinkRope')===String(x.id).startsWith('3')))||D.sets['102'];
+      const set=Object.values(D.sets).find(x=>p.sets.includes(x.en)&&((pt==='PlanarSphere'||pt==='LinkRope')===String(x.id).startsWith('3')))||D.sets[(pt==='PlanarSphere'||pt==='LinkRope')?'301':'102'];
       relics.push({_uid:'demo-'+(i+1),set_id:set.id,slot:pt,rarity:5,level,mainstat:main,substats:values,lock:i%17===0,location:i%19===0?p.id:'',discard:false});
     }
     const imported=parse({source:'示例背包（非你的账号）',version:4,characters:ps.map(p=>({id:p.id})),relics});imported.isDemo=true;return imported;

@@ -43,7 +43,8 @@ function Assert-LiveDecision($Request,$Decision,[bool]$AllowUnlockLowPotential=$
     }
     if($Decision.action-eq'enhance'){
         $r=$Request.observation;$o=$Decision.observation;$score=$Decision.averagePotential;$lower=$Decision.averageLower
-        if(-not$AllowEnhance-or$Request.upgrade-ne$true-or$r.rarity-ne 5-or$r.lock-ne$false-or$r.discard-ne$false-or$r.location-cne''-or$Decision.verified-ne$true){throw '未授权强化或遗器受保护。'}
+        $lockAllowed=$r.lock-eq$false-or($r.lock-eq$true-and$Decision.unlockFirst-eq$true)
+        if(-not$AllowEnhance-or$Request.upgrade-ne$true-or$r.rarity-ne 5-or-not$lockAllowed-or$r.discard-ne$false-or$r.location-cne''-or$Decision.verified-ne$true){throw '未授权强化或遗器受保护。'}
         if($null-eq$o.level-or$o.level-lt 0-or$o.level-ge 15-or$o.level-ne[Math]::Floor([double]$o.level)-or$Decision.targetLevel-ne[Math]::Min(15,([Math]::Floor($o.level/3)+1)*3)-or-not(Test-LiveNumber $score)-or[double]::IsNaN([double]$score)-or[double]::IsInfinity([double]$score)-or[double]$score-lt 80-or-not(Test-LiveNumber $lower)-or$lower-lt 80-or$lower-gt$score){throw '强化目标或评分不满足 +3 / 80 分规则。'}
     }
     return $true

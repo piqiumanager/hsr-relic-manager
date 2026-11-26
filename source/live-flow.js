@@ -1,7 +1,7 @@
 globalThis.LiveFlow=(()=>{
  'use strict';
- async function score(request,settings){
-  const E=RelicEngine,C=HSRCore,U=UpgradeFlow,r=globalThis.NumericOcr?await NumericOcr.resolve(request.observation):request.observation;if(!r||r.rarity!==5)throw Error('未确认五星遗器');
+ async function score(request,settings,options={}){
+  const E=RelicEngine,C=HSRCore,U=UpgradeFlow,r=globalThis.NumericOcr?await NumericOcr.resolve(request.observation,options):request.observation;if(!r||r.rarity!==5)throw Error('未确认五星遗器');
   const main=C.MainStatsValues[r.mainstat]?.[5];if(!main||!C.PartsMainStats[r.slot]?.includes(r.mainstat)||!Number.isInteger(r.level)||r.level<0||r.level>15)throw Error('主属性或等级不符合游戏规则');
   const actual=main.base+main.increment*r.level,display=s=>['HP','ATK','DEF','SPD'].includes(s)?Math.floor(actual+1e-5):Math.floor(actual*10+1e-5)/10;
   if(!Number.isFinite(r.mainstat_value)||Math.abs(r.mainstat_value-display(r.mainstat))>.011)throw Error('主属性数值与强化等级不一致');
@@ -17,8 +17,8 @@ globalThis.LiveFlow=(()=>{
   if(answer.unlockFirst)answer.reason=(r.level===15?'当前分':'平均满级潜力')+'低于 80，解锁后标记弃置';
   if(typeof r.lock!=='boolean')answer.reason='锁定状态不明，跳过';else if(r.location!=='')answer.reason=answer.equippedLow?'已装备的低分遗器，已保护，请单独复核':'已装备或装备状态不明，跳过';else if(r.discard!==false)answer.reason='已弃置或状态不明，跳过';
   if(typeof r.lock!=='boolean'||r.location!==''||r.discard!==false){answer.action='skip';answer.unlockFirst=false;}
-  if(request.upgrade===true&&answer.action==='keep'&&r.level<15&&r.lock===false){
-   if(lower.rows[0]?.best?.average>=80){answer.action='enhance';answer.targetLevel=Math.min(15,(Math.floor(r.level/3)+1)*3);answer.reason='平均满级潜力达到 80，强化至 +'+answer.targetLevel;}
+  if(request.upgrade===true&&answer.action==='keep'&&r.level<15){
+   if(lower.rows[0]?.best?.average>=80){answer.action='enhance';answer.unlockFirst=r.lock===true;answer.targetLevel=Math.min(15,(Math.floor(r.level/3)+1)*3);answer.reason=(answer.unlockFirst?'平均满级潜力达到 80，解锁后强化至 +':'平均满级潜力达到 80，强化至 +')+answer.targetLevel;}
    else{answer.action='skip';answer.reason='隐藏小数导致评分跨过 80，保留并跳过';}
   }
   return answer;

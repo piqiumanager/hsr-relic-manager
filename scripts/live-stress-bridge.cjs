@@ -1,0 +1,5 @@
+// Persistent production scorer for offline bag simulation. No game or network access.
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),readline=require('node:readline');
+const root=path.resolve(__dirname,'..'),ctx={console:{log(){},warn(){},error(){}},setTimeout,structuredClone};vm.createContext(ctx);ctx.HSRData=JSON.parse(fs.readFileSync(path.join(root,'source/data.json'),'utf8'));
+for(const f of ['fribbels-core.js','engine.js','upgrade-flow.js','live-flow.js'])vm.runInContext(fs.readFileSync(path.join(root,'source',f),'utf8'),ctx);
+(async()=>{for await(const line of readline.createInterface({input:process.stdin,crlfDelay:Infinity})){if(!line)continue;const request=JSON.parse(line);let answer;try{answer=await ctx.LiveFlow.score(request,ctx.RelicEngine.cleanupSettings());delete answer.row;}catch(e){answer={requestId:request.requestId,action:'skip',verified:false,raw:{_uid:request.relicId,rarity:0},reason:e.message};}process.stdout.write(JSON.stringify(answer)+'\n');}})().catch(e=>{process.stderr.write(String(e));process.exitCode=1;});

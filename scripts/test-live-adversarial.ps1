@@ -18,6 +18,11 @@ $resolved.numericFingerprint='current-pixels';$resolved.substats[0].key='DEF';$b
 $req=@{requestId='a';upgrade=$true;observation=$raw}
 foreach($lower in @($null,79.99,[double]::NaN,[double]::PositiveInfinity,91)){$bad=$false;try{Assert-LiveDecision $req @{requestId='a';action='enhance';verified=$true;observation=(Clone $raw);targetLevel=15;averagePotential=90;averageLower=$lower} $true $true|Out-Null}catch{$bad=$true};Assert $bad 'Enhancement requires a valid lower bound of at least 80'}
 Assert (Assert-LiveDecision $req @{requestId='a';action='enhance';verified=$true;observation=(Clone $raw);targetLevel=15;averagePotential=90;averageLower=80} $true $true) 'Exact lower boundary 80 permits the next stage'
+$lockedHigh=Clone $raw;$lockedHigh.lock=$true
+$enhance=@{requestId='a';action='enhance';verified=$true;observation=(Clone $lockedHigh);targetLevel=15;averagePotential=90;averageLower=80;unlockFirst=$true}
+Assert (Assert-LiveDecision @{requestId='a';upgrade=$true;observation=$lockedHigh} $enhance $true $true) 'Locked high-potential relic can unlock only under the explicit enhancement job policy'
+$bad=$false;try{Assert-LiveDecision @{requestId='a';upgrade=$false;observation=$lockedHigh} $enhance $true $false|Out-Null}catch{$bad=$true};Assert $bad 'Cleanup mode cannot unlock high-potential relics for enhancement'
+$enhance.unlockFirst=$false;$bad=$false;try{Assert-LiveDecision @{requestId='a';upgrade=$true;observation=$lockedHigh} $enhance $true $true|Out-Null}catch{$bad=$true};Assert $bad 'Locked enhancement needs an explicit unlock decision'
 foreach($n in @(0,3000)){Assert ((Get-LiveInventoryCount @(@{text=('遗器数量 '+$n+'/3000')}))-eq$n) 'Valid inventory capacity boundary'}
 $bad=$false;try{Get-LiveInventoryCount @(@{text='遗器数量 9999/3000'})}catch{$bad=$true};Assert $bad 'OCR count beyond inventory capacity is rejected'
 foreach($value in @('1',$true)){$bad=$false;try{Assert-LiveDecision @{requestId='a';observation=$raw} @{requestId='a';action='markDiscard';verified=$true;observation=(Clone $raw);averagePotential=$value}|Out-Null}catch{$bad=$true};Assert $bad 'Score must be a numeric value'}

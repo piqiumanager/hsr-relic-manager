@@ -332,7 +332,7 @@ try {
                     if($script:markerJob){[IO.File]::WriteAllText((Join-Path $script:markerJob.directory 'stop'),'stop',$utf8)}
                     Send-Response $stream 200 (Json @{state='stopping';message='已请求停止，脚本会在下一次输入前停下。'})
                 } elseif ($route -eq '/api/health' -and $method -eq 'GET') {
-                    Send-Response $stream 200 (Json @{state='ok';version='1.5.4';capture='Reliquary v0.20.0';scoring='Fribbels';marker='Chinese Windows OCR'})
+                    Send-Response $stream 200 (Json @{state='ok';version='1.5.5';capture='Reliquary v0.20.0';scoring='Fribbels';marker='Chinese Windows OCR'})
                 } elseif ($route -eq '/api/exit' -and $method -eq 'POST') {
                     Send-Response $stream 200 (Json @{state='closing'})
                     if($script:markerJob){[IO.File]::WriteAllText((Join-Path $script:markerJob.directory 'stop'),'stop',$utf8)}

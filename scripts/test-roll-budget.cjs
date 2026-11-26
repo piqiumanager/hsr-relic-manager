@@ -7,6 +7,7 @@ function make(level,initial){const values=stats.map(key=>({key,value:C.SubStatVa
  for(let level=0;level<=15;level++){const r=make(level,4);const a=await ctx.LiveFlow.score({requestId:'test',relicId:r._uid,observation:r},ctx.RelicEngine.cleanupSettings());assert.equal(a.verified,true);checks++;}
  for(const level of [3,6,9,12]){const r=make(level,4);r.substats=stats.map(key=>({key,value:display(key,C.SubStatValues[key][5].high*(1+Math.floor(level/3)))}));assert.throws(()=>U.validateRollBudget(r),/总强化次数/);await assert.rejects(ctx.LiveFlow.score({requestId:'test',relicId:r._uid,observation:r},ctx.RelicEngine.cleanupSettings()),/总强化次数/);checks+=2;}
  for(const value of [NaN,undefined,null,'587',true]){await assert.rejects(ctx.LiveFlow.score({requestId:'test',relicId:'synthetic',observation:{...make(12,4),mainstat_value:value}},ctx.RelicEngine.cleanupSettings()),/主属性/);checks++;}
+ const impossiblePart={...make(12,4),set_id:'301'};await assert.rejects(ctx.LiveFlow.score({requestId:'test',relicId:'synthetic',observation:impossiblePart},ctx.RelicEngine.cleanupSettings()),/评分校验/);checks++;
  const maxed=make(15,4);maxed.substats=stats.map(key=>({key,value:display(key,C.SubStatValues[key][5].low)}));assert.throws(()=>U.validateRollBudget(maxed),/总强化次数/);checks++;
  for(const value of [NaN,Infinity,-Infinity,0,-1,null,'5.1',true]){assert.throws(()=>U.possibleValues('CRIT DMG',value,3));checks++;}
  console.log(JSON.stringify({rollBudgetChecks:checks,generatedValidRelics:1024,realScoringSamples:16,gameInput:0}));

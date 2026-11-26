@@ -26,7 +26,7 @@ function Get-LiveSnapshot {
     if(-not$script:markerJob-or$script:markerJob.kind-ne'live'){throw '没有现场读取记录。'}
     $file=Join-Path $script:markerJob.directory 'snapshot.json';if(-not(Test-Path -LiteralPath $file)){return Json @{state='empty'}}
     $raw=[IO.File]::ReadAllText($file,$utf8);$parsed=ConvertFrom-Json $raw;$status=Get-MarkerStatus;$id=$script:markerJob.id
-    if(-not$parsed.metadata.partial-and-not$parsed.metadata.unrecognized-and$status.state-eq'complete'){
+    if(-not$parsed.metadata.partial-and-not$parsed.metadata.unrecognized-and-not$parsed.metadata.pending-and$status.state-eq'complete'){
       $script:capture=@{id=$id;state='complete';json=$raw;started=Get-Date};$dir=Join-Path $dataBase 'captures';[IO.Directory]::CreateDirectory($dir)|Out-Null;[IO.File]::WriteAllText((Join-Path $dir ($id+'.json')),$raw,$utf8)
       return '{"state":"complete","captureId":'+(Json $id)+',"data":'+$raw+'}'
     }

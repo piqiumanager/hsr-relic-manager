@@ -1,7 +1,7 @@
 ﻿param([string]$JobDirectory,[string]$PlanPath,[string]$DataRoot='',[switch]$PreviewOnly,[switch]$Upgrade)
 $ErrorActionPreference='Stop';$base=$PSScriptRoot;$utf8=New-Object Text.UTF8Encoding($false)
 $statusPath=Join-Path $JobDirectory 'status.json';$stopPath=Join-Path $JobDirectory 'stop'
-$state=@{kind='live';state='starting';scanned=0;matched=0;marked=0;unlocked=0;attempted=0;equippedLow=0;upgrade=[bool]$Upgrade;confirmedSteps=0;submittedSteps=0;kept=0;passes=1;totalInspected=0;skipped=0;unrecognized=0;preview=[bool]$PreviewOnly;message='正在连接当前游戏…'}
+$state=@{kind='live';state='starting';scanned=0;matched=0;marked=0;unlocked=0;attempted=0;equippedLow=0;pending=0;upgrade=[bool]$Upgrade;confirmedSteps=0;submittedSteps=0;kept=0;passes=1;totalInspected=0;skipped=0;unrecognized=0;preview=[bool]$PreviewOnly;message='正在连接当前游戏…'}
 function Save-State([string]$Name,[string]$Message){$script:state.state=$Name;$script:state.message=$Message;[IO.File]::WriteAllText($statusPath+'.tmp',(ConvertTo-Json $script:state -Depth 30 -Compress),$utf8);Move-Item -LiteralPath ($statusPath+'.tmp') -Destination $statusPath -Force}
 function Check-Stop {if((Test-Path -LiteralPath $stopPath)-or[RelicNative]::StopPressed()){throw(New-Object OperationCanceledException('已停止现场扫描。'))}}
 function Read-Region($Bitmap,$Rect,[string]$Name){$b=[RelicNative]::Crop($Bitmap,$Rect.x,$Rect.y,$Rect.width,$Rect.height);try{$file=Join-Path $JobDirectory ($Name+'.png');$b.Save($file,[Drawing.Imaging.ImageFormat]::Png);return ,(Read-MarkerOcr $file)}finally{$b.Dispose()}}
@@ -46,6 +46,24 @@ function Ask-LiveScore($Observation,[string]$Intent='score'){
     Check-Stop;$answer=ConvertFrom-Json ([IO.File]::ReadAllText($file,$utf8));Assert-LiveDecision $request $answer ($plan.allowUnlockLowPotential-eq$true) ($plan.upgrade-eq$true-and-not$PreviewOnly)|Out-Null;$script:state.Remove('request')
     if($answer.action-eq'stop'){throw $answer.reason};return $answer
 }
+function Unlock-LiveRelic($Expected,$Decision,[string]$Purpose,$Record=$null){
+    if($PreviewOnly-or$Expected.lock-ne$true-or$Decision.unlockFirst-ne$true-or$Decision.verified-ne$true-or$Expected.discard-ne$false-or$Expected.location-cne''){throw '解锁条件未核实。'}
+    if($Purpose-eq'markDiscard'){if($plan.allowUnlockLowPotential-ne$true-or$Decision.action-ne'markDiscard'){throw '未授权低分解锁。'}}
+    elseif($Purpose-eq'enhance'){if($plan.upgrade-ne$true-or$PreviewOnly-or$Decision.action-ne'enhance'-or-not(Test-LiveNumber $Decision.averageLower)-or$Decision.averageLower-lt 80){throw '未授权高潜力解锁强化。'}}
+    else{throw '未知解锁用途。'}
+    if($Purpose-eq'enhance'){$script:state.attempted++}
+    Check-Stop;[RelicNative]::ClickVerifiedControl($window,($layout.unlockRect.x+[int]($layout.unlockRect.width/2)),($layout.unlockRect.y+[int]($layout.unlockRect.height/2)));[RelicNative]::HoverControl($window,1330,110)
+    Check-Stop;if(-not(Check-Inventory)){throw '解锁后已离开背包。'}
+    $frame=[RelicNative]::Capture($window)
+    try{Save-LiveEvidence $frame 'unlocked';$same=Read-Selected $frame $state.scanned
+      if($same.lock-ne$false-or$same.discard-ne$false-or$same.location-cne''){throw '未确认解锁状态，已停止，不重复点击。'}
+      $verified=Ask-LiveScore $same $(if($Purpose-eq'enhance'){'verify-upgrade-unlocked'}else{'verify-unlocked'})
+      if($verified.action-ne$Purpose-or$verified.verified-ne$true-or-not(Test-LiveIdentity $verified.observation $Expected)-or($Purpose-eq'enhance'-and$verified.targetLevel-ne$Decision.targetLevel)){throw '解锁后属性或评分核验不通过，已停止。'}
+      $script:state.unlocked++;if($Record){$Record.lock=$false}
+      [IO.File]::AppendAllText((Join-Path $JobDirectory 'actions.jsonl'),(ConvertTo-Json @{action=$(if($Purpose-eq'enhance'){'high-potential-unlock-for-upgrade-confirmed'}else{'low-potential-unlock-confirmed'});index=$state.scanned;piece=$Expected.pieceName;level=$Expected.level} -Compress)+"`n",$utf8)
+      return $verified
+    }finally{$frame.Dispose()}
+}
 function Mark-LiveRelic($Observation,$Expected,$Record=$null){
     if($null-eq$Expected.level-or$Expected.level-lt 0-or$Expected.level-gt 15){throw '遗器等级不明，不参与标记。'}
     $script:state.attempted++;Check-Stop;if(-not(Check-Inventory)){throw '已离开遗器背包。'}
@@ -58,18 +76,7 @@ function Mark-LiveRelic($Observation,$Expected,$Record=$null){
       $reference=[RelicNative]::Crop($before,$layout.discardRect.x,$layout.discardRect.y,$layout.discardRect.width,$layout.discardRect.height)
     }finally{$before.Dispose()}
     try{
-      if($same.lock-eq$true){
-        if($plan.allowUnlockLowPotential-ne$true-or$verified.unlockFirst-ne$true){throw '未授权解锁当前遗器。'}
-        Check-Stop;[RelicNative]::ClickVerifiedControl($window,($layout.unlockRect.x+[int]($layout.unlockRect.width/2)),($layout.unlockRect.y+[int]($layout.unlockRect.height/2)));[RelicNative]::HoverControl($window,1330,110)
-        Check-Stop;if(-not(Check-Inventory)){throw '解锁后已离开背包。'}
-        $unlocked=[RelicNative]::Capture($window)
-        try{Save-LiveEvidence $unlocked 'unlocked';$same=Read-Selected $unlocked $state.scanned
-          if($same.lock-ne$false-or$same.discard-ne$false-or$same.location-cne''){throw '未确认解锁状态，已停止，不重复点击。'}
-          $verified=Ask-LiveScore $same 'verify-unlocked'
-          if($verified.action-ne'markDiscard'-or$verified.verified-ne$true-or-not(Test-LiveIdentity $verified.observation $Expected)){throw '解锁后属性核验不通过，未执行弃置。'}
-          $script:state.unlocked++;if($Record){$Record.lock=$false};[IO.File]::AppendAllText((Join-Path $JobDirectory 'actions.jsonl'),(ConvertTo-Json @{action='low-potential-unlock-confirmed';index=$state.scanned;piece=$Observation.pieceName} -Compress)+"`n",$utf8)
-        }finally{$unlocked.Dispose()}
-      }
+      if($same.lock-eq$true){$verified=Unlock-LiveRelic $verified.observation $verified 'markDiscard' $Record}
       Check-Stop
       [RelicNative]::ClickDiscard($window,$layout.discardPoint[0],$layout.discardPoint[1]);[RelicNative]::HoverControl($window,1330,110)
       $after=[RelicNative]::Capture($window)
@@ -82,7 +89,7 @@ function Mark-LiveRelic($Observation,$Expected,$Record=$null){
     }finally{$reference.Dispose()}
 }
 function Save-Snapshot {
-    if($null-eq$script:records){return};$snapshot=@{source='当前游戏画面';characters=@($plan.characters);relics=$script:records.ToArray();metadata=@{partial=($state.scanned-lt$state.inventoryCount-or$script:records.Count-lt$state.inventoryCount-or$state.unrecognized-gt 0);screenRead=$true;inventoryCount=$state.inventoryCount;unrecognized=$state.unrecognized}}
+    if($null-eq$script:records){return};$snapshot=@{source='当前游戏画面';characters=@($plan.characters);relics=$script:records.ToArray();metadata=@{partial=($state.scanned-lt$state.inventoryCount-or$script:records.Count-lt$state.inventoryCount-or$state.unrecognized-gt 0-or$state.pending-gt 0);upgradeRequested=($plan.upgrade-eq$true);pending=[int]$state.pending;screenRead=$true;inventoryCount=$state.inventoryCount;unrecognized=$state.unrecognized}}
     [IO.File]::WriteAllText((Join-Path $JobDirectory 'snapshot.json'),(ConvertTo-Json $snapshot -Depth 30 -Compress),$utf8)
 }
 function Upgrade-LiveRelic($Initial,[int]$RecordIndex){
@@ -98,6 +105,8 @@ function Upgrade-LiveRelic($Initial,[int]$RecordIndex){
       try{$fresh=Read-Selected $frame $state.scanned}finally{$frame.Dispose()}
       $verified=Ask-LiveScore $fresh 'verify-upgrade'
       if($verified.action-ne'enhance'-or$verified.targetLevel-ne$target-or-not(Test-LiveIdentity $verified.observation $expected)){throw '强化前遗器属性或评分改变。'}
+      if($verified.observation.lock-eq$true){$verified=Unlock-LiveRelic $verified.observation $verified 'enhance' $script:records[$RecordIndex];$script:records[$RecordIndex]=$verified.raw}
+      $expected=$verified.observation
       $active=@($verified.observation.substats|ForEach-Object{@{stat=$_.key;value=$_.value}})
       $level=@{enhance=[int]$expected.level}
       Prepare-Enhancement $null $level $target $active
@@ -125,7 +134,10 @@ function Process-LiveRecord($Raw){
         if($PreviewOnly-or$plan.upgrade-ne$true){throw '未授权强化。'}
         Upgrade-LiveRelic $answer ($script:records.Count-1);$script:restartTraversal=$true
       }
-      elseif($answer.action-eq'skip'){$script:state.skipped++}
+      elseif($answer.action-eq'skip'){
+        $script:state.skipped++
+        if($answer.verified-eq$true-and$answer.observation.discard-ne$true-and($answer.observation.location-ceq''-or$answer.observation.location-ceq'live-protected-footer'-or$null-eq$answer.observation.location)){$script:state.pending=[int]$script:state.pending+1}
+      }
     }else{$script:records.Add(@{_uid=('live-'+$script:state.scanned);rarity=0});$script:state.skipped++;$script:state.lastDecision='非目标遗器或属性识别不完整，跳过'}
 }
 function Save-LiveFailure($ErrorRecord){
@@ -144,8 +156,8 @@ function Invoke-LiveTraversal {
       if(-not(Check-Inventory)){throw '已离开遗器背包，已停止。'}
       $b=[RelicNative]::Capture($window);$state.scanned++;$state.totalInspected++
       try{
-        $grid=[RelicNative]::Crop($b,70,155,1250,755);$hash=[RelicNative]::ImageHash($b)
-        try{if($previousGrid-and$hash-eq$previousHash-and[RelicNative]::Difference($grid,$previousGrid)-lt .005){throw '遗器选择未移动，已停止，请检查筛选或按键。'};if($previousGrid){$previousGrid.Dispose()};$previousGrid=[Drawing.Bitmap]$grid.Clone();$previousHash=$hash}finally{$grid.Dispose()}
+        $grid=[RelicNative]::Crop($b,70,155,1250,755);$hash=[RelicNative]::ImageHash($grid)
+        try{if($previousGrid-and$hash-eq$previousHash-and[RelicNative]::Difference($grid,$previousGrid)-lt .005){throw '遗器选择未移动，已停止，请检查筛选或按键。'}}finally{$grid.Dispose()}
         $rarity=[RelicNative]::Crop($b,1405,192,440,165);try{$five=[RelicNative]::FiveStarPanel($rarity)}finally{$rarity.Dispose()}
         $raw=$null
         if($five){try{$raw=Read-Selected $b $state.scanned}catch{$state.unrecognized++;[IO.File]::AppendAllText((Join-Path $JobDirectory 'recognition-errors.jsonl'),(ConvertTo-Json @{index=$state.scanned;message=$_.Exception.GetBaseException().Message} -Compress)+"`n",$utf8);if($state.unrecognized-le 8){foreach($name in @('panel','subs','main-label')){$file=Join-Path $JobDirectory ($name+'.png');if(Test-Path -LiteralPath $file){Copy-Item -LiteralPath $file -Destination (Join-Path $JobDirectory ('unrecognized-'+$state.scanned+'-'+$name+'.png')) -Force}}}}}
@@ -160,12 +172,18 @@ function Invoke-LiveTraversal {
         Save-Snapshot;$state.passes++;if($state.passes-gt 3001){throw '强化遍历次数异常，已停止。'}
         [RelicNative]::ScrollToTop($window,700,450);[RelicNative]::ClickGrid($window,$layout.first[0],$layout.first[1]);Start-Sleep -Milliseconds 350
         $frame=[RelicNative]::Capture($window);try{$state.inventoryCount=Get-LiveInventoryCount (Read-Region $frame @{x=1490;y=30;width=360;height=65} 'count')}finally{$frame.Dispose()}
-        $script:records.Clear();$state.scanned=0;$state.unrecognized=0;$state.equippedLow=0;$state.skipped=0
+        $script:records.Clear();$state.scanned=0;$state.unrecognized=0;$state.equippedLow=0;$state.pending=0;$state.skipped=0
         if($previousGrid){$previousGrid.Dispose();$previousGrid=$null};$previousHash='';$i=-1;continue
       }
-      if($state.scanned-lt$state.inventoryCount){[RelicNative]::TapNavigation($window,(Get-RelicNavigationKey $i));Start-Sleep -Milliseconds 200}
+      if($state.scanned-lt$state.inventoryCount){
+        # Compare against the grid AFTER marking, before sending navigation.
+        # A changed discard/lock icon cannot count as movement to another slot.
+        Check-Stop;$reference=[RelicNative]::Capture($window)
+        try{$grid=[RelicNative]::Crop($reference,70,155,1250,755);try{if($previousGrid){$previousGrid.Dispose()};$previousGrid=[Drawing.Bitmap]$grid.Clone();$previousHash=[RelicNative]::ImageHash($grid)}finally{$grid.Dispose()}}finally{$reference.Dispose()}
+        [RelicNative]::TapNavigation($window,(Get-RelicNavigationKey $i));Start-Sleep -Milliseconds 200
+      }
     }
-    Save-Snapshot;Save-State $(if($state.unrecognized){'partial'}else{'complete'}) $(if($PreviewOnly){'读取完成，未修改遗器。'}else{'标记完成，分解由你确认。'})
+    Save-Snapshot;Save-State $(if($state.unrecognized-or$state.pending){'partial'}else{'complete'}) $(if($PreviewOnly){'读取完成，未修改遗器。'}elseif($state.unrecognized-or$state.pending){'仍有未识别或待复核项目，请查看明细。已标记的分解由你确认。'}else{'处理完成，分解由你确认。'})
     }finally{if($previousGrid){$previousGrid.Dispose()}}
 }
 

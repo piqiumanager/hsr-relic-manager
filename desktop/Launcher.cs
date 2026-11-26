@@ -9,8 +9,8 @@ using System.Threading;
 using System.Windows.Forms;
 
 [assembly: AssemblyTitle("星铁遗器整理助手")]
-[assembly: AssemblyVersion("1.5.4.0")]
-[assembly: AssemblyFileVersion("1.5.4.0")]
+[assembly: AssemblyVersion("1.5.5.0")]
+[assembly: AssemblyFileVersion("1.5.5.0")]
 internal static class Launcher {
     [DllImport("kernel32.dll", CharSet=CharSet.Unicode)] static extern bool SetDllDirectory(string directory);
     static string Hash(byte[] bytes) { using (var sha=SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "").ToLowerInvariant(); }
@@ -27,7 +27,7 @@ internal static class Launcher {
                 if(stream==null)throw new InvalidDataException("内置文件缺失，请重新下载 EXE。");
                 using(var memory=new MemoryStream()){stream.CopyTo(memory);payload=memory.ToArray();}
             }
-            string app=Path.Combine(root,"app","1.5.4-"+Hash(payload).Substring(0,12));
+            string app=Path.Combine(root,"app","1.5.5-"+Hash(payload).Substring(0,12));
             Directory.CreateDirectory(app);
             string prefix=Path.GetFullPath(app)+Path.DirectorySeparatorChar;
             using(var zip=new ZipArchive(new MemoryStream(payload),ZipArchiveMode.Read)) {

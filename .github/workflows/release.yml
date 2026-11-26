@@ -20,17 +20,17 @@ permissions:
   contents: write
 
 concurrency:
-  group: publish-v1.5.4
+  group: publish-v1.5.5
   cancel-in-progress: false
 
 jobs:
   publish:
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
-      RELEASE_TAG: v1.5.4
+      RELEASE_TAG: v1.5.5
     steps:
       - name: Check out exact source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -54,6 +54,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Aggregate relic roll budget regressions failed' }
           powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-live-adversarial.ps1
           if ($LASTEXITCODE -ne 0) { throw 'Malformed observation and binding regressions failed' }
+          node scripts/test-numeric-ocr-recovery.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'OCR crash/timeout/cancellation recovery failed' }
           node scripts/test-live-flow.cjs
           if ($LASTEXITCODE -ne 0) { throw 'Live screen scoring tests failed' }
           node scripts/test-ocr-assets.cjs
@@ -80,6 +82,11 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Layout tests failed' }
           powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-marker-core.ps1
           if ($LASTEXITCODE -ne 0) { throw 'Native matching tests failed' }
+      - name: Verify complete 3000-item simulated inventory and repeated enhancements
+        shell: powershell
+        run: |
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-live-bag.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Full simulated inventory test failed' }
       - name: Build single executable with verified official dependencies
         shell: powershell
         run: |
@@ -91,10 +98,10 @@ jobs:
         run: |
           gh release view $env:RELEASE_TAG 2>$null | Out-Null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $env:RELEASE_TAG --target $env:GITHUB_SHA --prerelease --title 'v1.5.4 · 异常识别与停止流程修复（待游戏复测）' --notes-file docs/RELEASE_NOTES.md
+            gh release create $env:RELEASE_TAG --target $env:GITHUB_SHA --prerelease --title 'v1.5.5 · 完整清理与强化流程回归（待游戏复测）' --notes-file docs/RELEASE_NOTES.md
             if ($LASTEXITCODE -ne 0) { throw 'Release creation failed' }
           }
-          gh release upload $env:RELEASE_TAG 'dist/hsr-relic-manager-v1.5.4-windows.zip' 'dist/hsr-relic-manager-v1.5.4.exe' 'dist/SHA256SUMS.txt' --clobber
+          gh release upload $env:RELEASE_TAG 'dist/hsr-relic-manager-v1.5.5-windows.zip' 'dist/hsr-relic-manager-v1.5.5.exe' 'dist/SHA256SUMS.txt' --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Asset upload failed' }
           $assets = gh release view $env:RELEASE_TAG --json assets --jq '.assets[].name'
           if ($assets -contains 'default.exe') {

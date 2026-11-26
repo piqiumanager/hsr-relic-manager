@@ -6,7 +6,7 @@ Add-Type -AssemblyName System.Drawing
 Add-Type -ReferencedAssemblies System.Drawing -TypeDefinition @'
 using System;using System.Drawing;using System.Collections.Generic;
 public static class RelicNative {
- public static bool Traversal,AcceptUnlock=true,AcceptMark=true;public static int Unlocks,Marks,Index;
+ public static bool NoNavigation,Traversal,AcceptUnlock=true,AcceptMark=true;public static int Unlocks,Marks,Index;
  static bool locked,marked;public static string[] Keys;
  public static Dictionary<string,bool> LockMap=new Dictionary<string,bool>(),MarkMap=new Dictionary<string,bool>();
  public static Dictionary<string,int> Rarities=new Dictionary<string,int>();
@@ -21,7 +21,7 @@ public static class RelicNative {
  public static bool FiveStarPanel(Bitmap b){return !Traversal||Rarities[Keys[Index]]==5;}
  public static string ImageHash(Bitmap b){return b.GetPixel(0,0).ToArgb().ToString();}
  public static double Difference(Bitmap a,Bitmap b){return a.GetPixel(0,0)==b.GetPixel(0,0)?0:1;}
- public static void TapNavigation(object w,string key){if(key=="D")Index++;else if(key=="A")Index--;else if(key=="S")Index+=9;}
+ public static void TapNavigation(object w,string key){if(NoNavigation)return;if(key=="D")Index++;else if(key=="A")Index--;else if(key=="S")Index+=9;}
  public static void ScrollToTop(object w,int x,int y){Index=0;}
  public static void ClickGrid(object w,int x,int y){Index=0;}
 }
@@ -46,13 +46,14 @@ function Save-State($name,$message){
       $script:scoreRequests++
     }
 }
-function Check-Stop {if($script:case-eq'stop-score-ready'-and$script:scoreRequests-gt 0){throw(New-Object OperationCanceledException('Stopped while score response was arriving'))};if($script:case-eq'stop-after-upgrade'-and$script:confirmations-ge 1){throw(New-Object OperationCanceledException('Synthetic stop'))}}
+function Check-Stop {if($script:case-eq'stop-high-unlock'-and[RelicNative]::Unlocks-gt 0){throw(New-Object OperationCanceledException('Stopped after high-potential unlock'))};if($script:case-eq'stop-score-ready'-and$script:scoreRequests-gt 0){throw(New-Object OperationCanceledException('Stopped while score response was arriving'))};if($script:case-eq'stop-after-upgrade'-and$script:confirmations-ge 1){throw(New-Object OperationCanceledException('Synthetic stop'))}}
 function Check-Inventory {Check-Stop;return $script:case-ne'left-inventory'}
 function Read-Selected($b,$index){
     if([RelicNative]::Traversal){$script:physical=$script:bag[[RelicNative]::Index]}
     $script:reads++;$r=Clone $script:physical;$r._uid='live-'+$index;$r.lock=[RelicNative]::Locked;$r.discard=[RelicNative]::Marked
     if($script:case-eq'changed-after-mark'-and[RelicNative]::Marks-gt 0){$r.mainstat_value=112}
     if($script:case-eq'corrupt-upgrade'-and$script:confirmations-gt 0){$r.set_id='118'}
+    if($script:case-eq'unknown-lock'){$r.lock=$null}
     return $r
 }
 function Prepare-Enhancement($candidate,$observation,$target,$active){
@@ -74,7 +75,7 @@ $bridge=Join-Path $root 'scripts/live-fixture-bridge.cjs'
 & $Node $bridge --generate;if($LASTEXITCODE-ne 0){throw 'Fixture generation failed'}
 $fixture=ConvertFrom-Json ([IO.File]::ReadAllText((Join-Path $root 'work/live-pipeline-fixtures.json'),$utf8))
 function Reset-Case($name,$raw,[bool]$enhance=$false){
-    [RelicNative]::Traversal=$false
+    [RelicNative]::Traversal=$false;[RelicNative]::NoNavigation=$false
     $script:case=$name;$script:physical=Clone $raw;$script:physical._uid='live-1';$script:reads=0;$script:confirmations=0;$script:targets=@();$script:scoreRequests=0
     [RelicNative]::Locked=($raw.lock-eq$true);[RelicNative]::Marked=($raw.discard-eq$true);[RelicNative]::Unlocks=0;[RelicNative]::Marks=0;[RelicNative]::AcceptUnlock=$true;[RelicNative]::AcceptMark=$true
     $script:JobDirectory=Join-Path $root ('work/pipeline-'+$name+'-'+[Guid]::NewGuid().ToString('N'));[IO.Directory]::CreateDirectory($JobDirectory)|Out-Null
@@ -118,6 +119,13 @@ Reset-Case 'high-to-15' $fixture.high[0] $true;$script:sequence=$fixture.high
 Assert (-not(Run-Case)) ('High pipeline completes: '+$lastError)
 Assert (($targets-join',')-eq'3,6,9,12,15'-and$state.confirmedSteps-eq 5-and$state.kept-eq 1-and[RelicNative]::Marks-eq 0) 'Real per-step scorer reaches +15 only after five verified upgrades'
 $saved=ConvertFrom-Json ([IO.File]::ReadAllText((Join-Path $JobDirectory 'snapshot.json'),$utf8));Assert ($saved.relics[0].level-eq 15-and$saved.relics[0].discard-eq$false) 'Final high +15 persisted'
+$highLocked=Clone $fixture.high[0];$highLocked.lock=$true
+Reset-Case 'locked-high-to-15' $highLocked $true;$script:sequence=$fixture.high
+Assert (-not(Run-Case)) 'A locked high-potential relic can complete the enhancement workflow'
+Assert ($state.unlocked-eq 1-and[RelicNative]::Unlocks-eq 1-and$state.confirmedSteps-eq 5-and$state.kept-eq 1-and[RelicNative]::Marks-eq 0) 'High-potential unlock happens once before the five verified stages'
+Reset-Case 'stop-high-unlock' $highLocked $true;$script:sequence=$fixture.high
+Assert (Run-Case) 'Stop after unlocking a high-potential relic is honored'
+Assert ($state.state-eq'stopped'-and$confirmations-eq 0-and[RelicNative]::Marks-eq 0) 'Cancellation after high unlock cannot spend materials or discard'
 Reset-Case 'becomes-low' $fixture.low[0] $true;$script:sequence=$fixture.low
 Assert (-not(Run-Case)-and($targets-join',')-eq'3,6'-and$state.confirmedSteps-eq 2-and$state.marked-eq 1-and[RelicNative]::Marks-eq 1) 'Actual scoring turns a +6 into discard and stops all further upgrades'
 foreach($name in @('bad-materials','corrupt-upgrade','stop-after-upgrade')){
@@ -146,4 +154,21 @@ Assert ($saved.metadata.partial-eq$false-and$state.totalInspected-eq 5) 'Complet
 [RelicNative]::Traversal=$false
 Reset-Case 'empty-bag' $fixture.junk;$state.scanned=0;$state.inventoryCount=0;Invoke-LiveTraversal
 $empty=ConvertFrom-Json ([IO.File]::ReadAllText((Join-Path $JobDirectory 'snapshot.json'),$utf8));Assert ($state.state-eq'complete'-and$empty.relics.Count-eq 0-and[RelicNative]::Marks-eq 0) 'An empty inventory serializes a complete empty snapshot with no input'
+foreach($level in @(0,3,6,9,12,15)){foreach($isLocked in @($false,$true)){
+ $target=Clone $fixture.lowByLevel.([string]$level);$target.lock=$isLocked;Reset-Case ('low-level-'+$level+'-'+$isLocked) $target
+ Assert (-not(Run-Case)) ('Low unowned relic executes at +'+$level)
+ Assert ($state.marked-eq 1-and[RelicNative]::Marks-eq 1-and$state.unlocked-eq$(if($isLocked){1}else{0})-and[RelicNative]::Unlocks-eq$(if($isLocked){1}else{0})) ('Mark exactly once, unlock only when needed: +'+$level)
+}}
+$unknown=Clone $fixture.junk;$unknown.lock=$null
+Reset-Case 'unknown-lock' $unknown $true;$script:bag=@($unknown);$unknown|Add-Member -NotePropertyName testKey -NotePropertyValue 'unknown';[RelicNative]::Keys=[string[]]@('unknown');[RelicNative]::LockMap['unknown']=$false;[RelicNative]::MarkMap['unknown']=$false;[RelicNative]::Rarities['unknown']=5;[RelicNative]::Traversal=$true;[RelicNative]::Index=0;$state.scanned=0;$state.inventoryCount=1;Invoke-LiveTraversal
+Assert ($state.state-eq'partial'-and$state.pending-eq 1-and[RelicNative]::Marks-eq 0-and$confirmations-eq 0) 'Unknown lock state is protected and cannot be reported as a completed enhancement run'
+[RelicNative]::Traversal=$false
+Reset-Case 'ignored-navigation' $fixture.junk
+$script:bag=@((Clone $fixture.junk),(Clone $fixture.junk))
+for($i=0;$i-lt 2;$i++){$key='stuck-'+$i;$bag[$i]|Add-Member -NotePropertyName testKey -NotePropertyValue $key;[RelicNative]::LockMap[$key]=$false;[RelicNative]::MarkMap[$key]=$false;[RelicNative]::Rarities[$key]=5}
+[RelicNative]::Keys=[string[]]@($bag|ForEach-Object{$_.testKey});[RelicNative]::Traversal=$true;[RelicNative]::NoNavigation=$true;[RelicNative]::Index=0
+$state.scanned=0;$state.inventoryCount=2;$layout.first=@(2,2);$failed=$false
+try{Invoke-LiveTraversal}catch{$failed=$true}
+Assert ($failed-and$state.state-ne'complete'-and$state.marked-eq 1-and[RelicNative]::MarkMap['stuck-1']-eq$false) 'A changed discard icon must not disguise ignored navigation or complete the inventory'
+[RelicNative]::Traversal=$false
 Write-Output ('Offline live pipeline passed: '+$checks+' checks; production JS scoring, API/file IPC, worker orchestration and snapshots; simulated input only, actual game input: 0.')
