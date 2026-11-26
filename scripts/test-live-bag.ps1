@@ -96,10 +96,17 @@ try{
  $locked=Item $fixture.junk 'locked-static';$locked.lock=$true;$items.Add($locked);$items.Add((Item $fixture.junk 'low-static'))
  $equipped=Item $fixture.junk 'equipped-static';$equipped.location='equipped';$items.Add($equipped)
  for($i=0;$i-lt 10;$i++){$r=Item $fixture.junk ('material-'+$i);$r.rarity=4;$items.Add($r)}
- Reset-Case 'consecutive-upgrades-and-resorts' $items.ToArray() $true
+ Reset-Case 'two-phase-initial-cleanup' $items.ToArray()
+ Assert (-not(Run-Case)) 'The first one-click cleanup finishes before enhancement'
+ Assert ($state.marked-eq 2-and$state.unlocked-eq 1-and$state.confirmedSteps-eq 0) 'Initial cleanup only unlocks and marks static low items without spending'
+ Assert (@($recipes.Keys|Where-Object{-not[RelicNative]::Locks[$_]}).Count-eq 0) 'High-potential locked embryos remain locked during cleanup'
+ # Carry the SAME inventory and verified game flags into the second button/run.
+ foreach($r in $script:bag){$key=$r.testKey;$r.lock=[RelicNative]::Locks[$key];$r.discard=[RelicNative]::Discarded[$key]}
+ Reset-Case 'consecutive-upgrades-and-resorts' $script:bag $true
  Assert (-not(Run-Case)) 'Multiple identical high and deteriorating relics complete staged upgrades'
  Assert ($state.confirmedSteps-eq 21-and$state.submittedSteps-eq 21-and$state.kept-eq 3) 'Three high relics each reach +15; three low paths stop after +6'
- Assert ($state.marked-eq 5-and$state.unlocked-eq 7-and[RelicNative]::Marks-eq 5) 'Deteriorating and static low items are marked exactly once'
+ Assert ($state.marked-eq 3-and$state.unlocked-eq 6-and[RelicNative]::Marks-eq 3) 'Enhancement unlocks all six embryos and marks only the three deteriorating paths'
+ Assert ([RelicNative]::Discarded['locked-static']-and[RelicNative]::Discarded['low-static']-and-not[RelicNative]::MarkClicks.ContainsKey('locked-static')-and-not[RelicNative]::MarkClicks.ContainsKey('low-static')) 'The second button preserves discard flags from the first run without toggling them'
  Assert ($state.inventoryCount-eq 9-and$state.passes-eq 7-and$state.state-eq'complete') 'Consumed materials and per-stage sorting cannot skip remaining items'
  Assert (@([RelicNative]::MarkClicks.Values|Where-Object{$_-gt 1}).Count-eq 0) 'Repeated scans never unmark a previous discard'
  foreach($key in $recipes.Keys){Assert ($steps[$key]-eq$(if($key-like'high-*'){5}else{2})) 'No extra enhancement after the terminal decision'}

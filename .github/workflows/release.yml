@@ -56,6 +56,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Malformed observation and binding regressions failed' }
           node scripts/test-numeric-ocr-recovery.cjs
           if ($LASTEXITCODE -ne 0) { throw 'OCR crash/timeout/cancellation recovery failed' }
+          node scripts/test-stress-bridge.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Persistent scorer UTF-8 protocol regression failed' }
           node scripts/test-live-flow.cjs
           if ($LASTEXITCODE -ne 0) { throw 'Live screen scoring tests failed' }
           node scripts/test-ocr-assets.cjs

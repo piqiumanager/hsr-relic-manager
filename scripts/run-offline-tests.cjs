@@ -1,7 +1,7 @@
 // Stops on the first failing check. Never starts a game worker.
 const {spawnSync}=require('node:child_process'),path=require('node:path'),fs=require('node:fs');
 const root=path.resolve(__dirname,'..');
-const js=['test-engine.cjs','test-import-main.cjs','test-upgrade-flow.cjs','test-upgrade-scoring.cjs','test-background.cjs','test-live-flow.cjs','test-roll-budget.cjs','test-numeric-ocr-recovery.cjs','test-ocr-assets.cjs','test-mark-plan.cjs'];
+const js=['test-engine.cjs','test-import-main.cjs','test-upgrade-flow.cjs','test-upgrade-scoring.cjs','test-background.cjs','test-live-flow.cjs','test-roll-budget.cjs','test-numeric-ocr-recovery.cjs','test-stress-bridge.cjs','test-ocr-assets.cjs','test-mark-plan.cjs'];
 const ps=['test-live-core.ps1','test-live-adversarial.ps1','test-live-executor.ps1','test-live-bridge.ps1','test-live-pipeline.ps1','test-upgrade-core.ps1','test-upgrade-bridge.ps1','test-server.ps1','test-appearance.ps1','test-layout.ps1','test-marker-core.ps1'];
 if(process.argv.includes('--stress'))ps.push('test-live-bag.ps1');
 if(process.argv.includes('--ocr'))ps.push('test-marker-ocr.ps1','test-live-recognition.ps1');
