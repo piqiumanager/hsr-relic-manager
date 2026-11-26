@@ -14,7 +14,7 @@ $request=@{requestId='11111111111111111111111111111111';observation=@{rarity=5;l
 [IO.File]::WriteAllText((Join-Path $markerJob.directory 'request.json'),(Json $request),$utf8)
 $answer=@{requestId=$request.requestId;action='markDiscard';verified=$true;raw=@{};observation=@{level=12};averagePotential=79.9}
 $result=Accept-LiveDecision $answer;Assert ($result.state-eq'accepted') 'Verified response delivered'
-Assert ($plan.settings.average-eq 80-and$plan.settings.best-eq 0-and$plan.unfinishedOnly) 'Old settings cannot restore the former 70/85 cleanup rule'
+Assert ($plan.settings.average-eq 80-and$plan.settings.current-eq 80-and$plan.settings.best-eq 0-and-not$plan.unfinishedOnly) 'Old settings cannot restore the former 70/85 cleanup rule'
 $answer.requestId='old';$bad=$false;try{Accept-LiveDecision $answer}catch{$bad=$true};Assert $bad 'Stale response rejected'
 function Get-MarkerStatus {return @{state='stopped'}}
 $raw=@{relics=@(@{_uid='synthetic';rarity=5});metadata=@{partial=$true;unrecognized=0}}
@@ -25,5 +25,7 @@ $raw.metadata.partial=$false;[IO.File]::WriteAllText((Join-Path $markerJob.direc
 $snapshot=ConvertFrom-Json (Get-LiveSnapshot);Assert ($snapshot.captureId-eq$markerJob.id-and$capture.state-eq'complete') 'Complete snapshot persisted without relogin'
 $raw.metadata.unrecognized=1;[IO.File]::WriteAllText((Join-Path $markerJob.directory 'snapshot.json'),(Json $raw),$utf8)
 $snapshot=ConvertFrom-Json (Get-LiveSnapshot);Assert ($snapshot.state-eq'partial'-and-not$snapshot.captureId) 'Unrecognized items cannot authorize enhancement even after full traversal'
+$body.upgrade=$true;$body.previewOnly=$false;Start-LiveWorker $body|Out-Null
+Assert ($arguments-match' -Upgrade'-and$markerJob.upgrade-eq$true) 'Enhancement starts without a complete inventory snapshot'
 $body.settings.scope='owned';$starts=$script:starts;$bad=$false;try{Start-LiveWorker $body}catch{$bad=$true};Assert ($bad-and$script:starts-eq$starts) 'Missing owned roster rejected before worker launch'
 Write-Output ('Live API/IPC checks passed: '+$script:checks+'; worker launches are mocked, real game input: 0')

@@ -15,9 +15,10 @@ $lockedDecision=@{requestId='a';action='markDiscard';verified=$true;observation=
 Assert-LiveDecision $req $lockedDecision $true|Out-Null
 $bad=$false;try{Assert-LiveDecision $req $lockedDecision $false|Out-Null}catch{$bad=$true};if(-not$bad){throw 'Unlock accepted without worker policy authorization'}
 $req.observation.lock=$null;$bad=$false;try{Assert-LiveDecision $req $lockedDecision $true|Out-Null}catch{$bad=$true};if(-not$bad){throw 'Unknown lock may not be unlocked'};$req.observation.lock=$false
+Assert-LiveDecision $req @{requestId='a';action='markDiscard';verified=$true;observation=@{level=15};currentScore=79.99}|Out-Null
 foreach($case in @(@{level=15;potential=1},@{level=12;potential=80},@{level=0;potential=80.1},@{level=-1;potential=1},@{level=3;potential=$null},@{level=3;potential=[double]::NaN})){$bad=$false;try{Assert-LiveDecision $req @{requestId='a';action='markDiscard';verified=$true;observation=@{level=$case.level};averagePotential=$case.potential}|Out-Null}catch{$bad=$true};if(-not$bad){throw 'Invalid full-level/80-boundary discard authorized'}}
 $ambiguous=@($panel+@{text='防御力';y=315});$r=ConvertFrom-LivePanel $ambiguous $subs $data 336 -NumbersPending -MainLines @(@{text='生命值'});if($r.mainstat-ne'HP'){throw 'Dedicated main-label region did not isolate the main stat'}
-foreach($file in @('server.ps1','live.ps1','live-core.ps1','live-server.ps1')){$t=$null;$e=$null;[Management.Automation.Language.Parser]::ParseFile((Join-Path $root $file),[ref]$t,[ref]$e)|Out-Null;if($e.Count){throw ($file+': '+$e[0].Message)}}
+foreach($file in @('enhancement-actions.ps1','upgrade.ps1','server.ps1','live.ps1','live-core.ps1','live-server.ps1')){$t=$null;$e=$null;[Management.Automation.Language.Parser]::ParseFile((Join-Path $root $file),[ref]$t,[ref]$e)|Out-Null;if($e.Count){throw ($file+': '+$e[0].Message)}}
 Write-Output 'Live screen parser, preview stat, inventory count, protected-state decision and worker syntax checks passed.'
 Add-Type -AssemblyName System.Drawing;Add-Type -AssemblyName System.Windows.Forms
 Add-Type -Path (Join-Path $root 'marker-native.cs') -ReferencedAssemblies System.Drawing,System.Windows.Forms

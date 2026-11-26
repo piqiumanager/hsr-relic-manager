@@ -14,7 +14,7 @@ $p=ConvertFrom-Json $planText;$p.allowSalvage=$true;Reject $p 'Salvage rejected'
 $dir=Join-Path $base ('work/upgrade-bridge-'+[Guid]::NewGuid().ToString('N'));[IO.Directory]::CreateDirectory($dir)|Out-Null
 $requestText=[IO.File]::ReadAllText((Join-Path $base 'work/upgrade-request-fixture.json'),$utf8);[IO.File]::WriteAllText((Join-Path $dir 'request.json'),$requestText,$utf8)
 $req=ConvertFrom-Json $requestText;$script:markerJob=@{kind='upgrade';directory=$dir;process=[pscustomobject]@{HasExited=$false};started=Get-Date}
-$answer=@{requestId=$req.requestId;action='enhance';targetLevel=3;lower=75;upper=76}
+$answer=@{requestId=$req.requestId;action='enhance';targetLevel=3;lower=90;upper=90}
 $accepted=Accept-UpgradeDecision $answer;Assert ($accepted.state-eq'accepted') 'Score response accepted'
 Assert (Test-Path -LiteralPath (Join-Path $dir ('decision-'+$req.requestId+'.json'))) 'Decision atomically delivered'
 $bad=$false;try{Accept-UpgradeDecision @{requestId='outdated';action='enhance';targetLevel=3;lower=90;upper=90}}catch{$bad=$true};Assert $bad 'Old request rejected'

@@ -7,7 +7,7 @@ globalThis.UpgradeFlow=(()=>{
   if(!Number.isInteger(relic.enhance)||relic.enhance<0||relic.enhance>15)throw Error('强化等级无效');
   const key=relic.enhance===15?'current':'average';const valid=scores.filter(s=>Number.isFinite(s[key]));if(!valid.length)return{action:'stop',reason:'无法重新评分'};
   const best=[...valid].sort((a,b)=>b[key]-a[key])[0];
-  if(!(initialTrial&&relic.enhance===0)&&best[key]<POLICY.threshold)return{action:'markDiscard',score:best[key],character:best.id};
+  if(best[key]<POLICY.threshold)return{action:'markDiscard',score:best[key],character:best.id};
   return relic.enhance===15?{action:'keep',score:best.current,character:best.id}:{action:'enhance',targetLevel:Math.min(15,relic.enhance+3),score:best[key],character:best.id};
  }
  function verifyPreparation(prepared,target){
@@ -18,7 +18,7 @@ globalThis.UpgradeFlow=(()=>{
   if(before.id!==after.id||before.setId!==after.setId||before.part!==after.part||before.main.stat!==after.main.stat||after.grade!==5||after.enhance!==target)throw Error('强化结果或遗器身份不一致');
   for(const old of before.substats){const s=after.substats.find(s=>s.stat===old.stat);if(!s||s.value+0.0001<old.value)throw Error('强化后词条异常');}
  }
- async function run(adapter,{cancelled=()=>false,initialTrial=true}={}){
+ async function run(adapter,{cancelled=()=>false,initialTrial=false}={}){
   if(!adapter||!['readSelected','score','prepare','confirm','markDiscard'].every(k=>typeof adapter[k]==='function'))throw Error('需要已验证的游戏执行器');
   let relic=await adapter.readSelected();const history=[];
   for(let n=0;n<6;n++){
@@ -70,7 +70,7 @@ globalThis.UpgradeFlow=(()=>{
   }
   if(!Number.isFinite(lower)||!Number.isFinite(upper))throw Error('强化后无法评分');
   const common={requestId:request.requestId,lower,upper,character,level:o.enhance};
-  if(request.initial&&o.enhance===0)return{...common,action:'enhance',targetLevel:3};
+
   if(upper<80)return{...common,action:'markDiscard'};
   if(lower>=80)return{...common,action:o.enhance===15?'keep':'enhance',targetLevel:o.enhance===15?15:o.enhance+3};
   return{...common,action:'stop',reason:'画面隐藏小数导致评分跨过 80 分，已保留并停止。'};

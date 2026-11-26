@@ -3,7 +3,7 @@
 <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2 2.8 7.2L22 12l-7.2 2.8L12 22l-2.8-7.2L2 12l7.2-2.8Z"/></symbol>
 <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
 <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 4v16h17M8 14v2m5-7v7m5-11v11"/></symbol>
-<symbol id="i-gear" viewBox="0 0 24 24"><path d="m9.4 4 .6-2h4l.6 2 2 .9 2-.5 2 3.4-1.4 1.5.2 2.2 1.6 1.4-1.9 3.5-2.1-.4-1.8 1.3-.6 2.7h-4l-.6-2.7-1.8-1.3-2.1.4-1.9-3.5 1.6-1.4.2-2.2L3.6 7.8l2-3.4 2 .5Z"/><circle cx="12" cy="11" r="3"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><path d="m9.4 4 .6-2h4l.6 2 2 .9 2-.5 2 3.4-1.4 1.5.3 2.2 1.6 1.4-1.9 3.5-2.1-.4-1.8 1.3-.6 2.7h-4l-.6-2.7-1.8-1.3-2.1.4-1.9-3.5 1.6-1.4.2-2.2L3.6 7.8l2-3.4 2 .5Z"/><circle cx="12" cy="11" r="3"/></symbol>
 <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="m4 18 5-5 4 3 4-5 4 6"/></symbol>
 <symbol id="i-clean" viewBox="0 0 24 24"><path d="m14 3-6 9 5 4 7-8M8 12l-4 3-1 6 6-2 4-3M4 17l3 3M18 3v3m-1.5-1.5h3"/></symbol>
 <symbol id="i-gem" viewBox="0 0 24 24"><path d="m7 4-4 5 9 12 9-12-4-5ZM3 9h18M7 4l5 17 5-17"/></symbol>
@@ -13,16 +13,16 @@
 <div class="app">
 <aside class="sidebar"><div class="brand"><span class="brand-mark"><svg><use href="#i-star"/></svg></span><div class="brand-copy"><strong>绷铁遗器</strong><small>一键分解</small></div></div>
 <nav class="navbar" aria-label="主导航"><div class="nav-current" aria-current="page"><svg><use href="#i-grid"/></svg><span>遗器整理</span></div><button id="detailsBtn" disabled title="评分明细"><svg><use href="#i-chart"/></svg><span>评分明细</span></button><button id="galleryBtn" title="角色背景"><svg><use href="#i-image"/></svg><span>角色背景</span><small class="nav-count">59</small></button><button id="settingsBtn" title="设置"><svg><use href="#i-gear"/></svg><span>设置</span></button></nav>
-<div class="sidebar-bottom"><button id="importBtn" class="import-button" title="导入背包"><svg><use href="#i-import"/></svg><span>导入背包</span></button><input id="fileInput" type="file" accept=".json" hidden><button id="demoBtn" hidden>体验示例</button><small class="version">v1.5.2 · 测试版</small></div></aside>
+<div class="sidebar-bottom"><button id="importBtn" class="import-button" title="导入背包"><svg><use href="#i-import"/></svg><span>导入背包</span></button><input id="fileInput" type="file" accept=".json" hidden><button id="demoBtn" hidden>体验示例</button><small class="version">v1.5.3 · 测试版</small></div></aside>
 <section class="main"><header class="topbar"><div><span class="section-kicker">遗器管理</span><h1 id="taskTitle">遗器清理</h1></div><span class="resolution">1920 × 1080<span>简体中文</span></span></header>
 <main class="workspace"><div class="character-stage" aria-hidden="true"><div class="art-halo"></div><img id="characterBackground" alt=""><div class="art-shade"></div></div>
 <section class="control-pane"><div class="task-title"><h2>留下好胚子</h2><p>平均满级潜力 · 80 分</p></div>
 <select id="mode" aria-label="操作模式" hidden><option value="discard">弃置</option><option value="upgrade">强化</option></select>
 <div class="task-list" aria-label="任务选择"><button id="discardModeBtn" class="task-item selected" aria-pressed="true"><svg><use href="#i-clean"/></svg><span>低分弃置<small>自动筛选与标记</small></span><i></i></button><button id="upgradeModeBtn" class="task-item" aria-pressed="false"><svg><use href="#i-gem"/></svg><span>胚子强化<small>每次强化 +3</small></span><i></i></button></div>
-<div id="ruleChips" class="rule-chips"><span>潜力 &lt;80 弃置</span><span>+15 跳过</span><span>低分自动解锁</span></div>
+<div id="ruleChips" class="rule-chips"><span>潜力 &lt;80 弃置</span><span>+15 看当前分</span><span>低分自动解锁</span></div>
 <section class="stats" aria-label="背包统计"><div><span>五星遗器</span><b id="total">—</b></div><div><span>已评分</span><b id="scored">—</b></div><div><span>保留 / 跳过</span><b id="kept">—</b></div><div><span>已标记</span><b id="low">—</b></div></section>
-<div id="coverage" class="coverage"></div><section class="progress"><div class="progress-head"><strong id="phase">准备就绪</strong><span class="state-dot"></span></div><progress id="progress" max="1" value="0"></progress><div id="status" role="status">点击开始，即可筛选并标记。</div></section></section>
+<div id="coverage" class="coverage"></div><button id="equippedWarningBtn" class="equipped-warning" hidden></button><section class="progress"><div class="progress-head"><strong id="phase">准备就绪</strong><span class="state-dot"></span></div><progress id="progress" max="1" value="0"></progress><div id="status" role="status">点击开始，即可筛选并标记。</div></section></section>
 <div class="character-tools"><span class="character-label"><small>当前立绘</small><b id="characterName">角色背景</b></span><button id="nextBackgroundBtn" class="icon-button" title="换一张" aria-label="换一张"><svg><use href="#i-shuffle"/></svg></button></div></main>
-<footer class="dock"><small id="rulesSummary">未满级平均潜力 &lt;80 解锁并弃置 · +15 跳过。</small><div class="actions"><button id="captureBtn" class="secondary">仅看评分</button><button id="stopBtn" class="stop-button" disabled>停止 · F8</button><button id="markBtn" class="primary" disabled>开始筛选并标记</button></div></footer></section></div>
+<footer class="dock"><small id="rulesSummary">未满级平均潜力 &lt;80 解锁并弃置 · +15 看当前分。</small><div class="actions"><button id="captureBtn" class="secondary">仅看评分</button><button id="stopBtn" class="stop-button" disabled>停止 · F8</button><button id="markBtn" class="primary" disabled>开始筛选并标记</button></div></footer></section></div>
 <dialog id="dialog"><div class="dialog-head"><h2 id="dialogTitle"></h2><button id="closeDialog" aria-label="关闭">×</button></div><div id="dialogBody"></div></dialog>
 <script>/*DATA*/</script><script>/*CORE*/</script><script>/*ENGINE*/</script><script>/*APP*/</script></body></html>

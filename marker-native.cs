@@ -71,18 +71,23 @@ public static class RelicNative {
     Guard(w);ushort vk;
     switch(key){case "B":vk=0x42;break;case "A":vk=0x41;break;case "D":vk=0x44;break;case "S":vk=0x53;break;case "Escape":vk=0x1B;break;default:throw new Exception("不允许的导航按键。");}
     var inputs=new INPUT[2];inputs[0].type=inputs[1].type=1;inputs[0].u.keyboard.key=inputs[1].u.keyboard.key=vk;inputs[1].u.keyboard.flags=2;
-    if(SendInput(2,inputs,Marshal.SizeOf(typeof(INPUT)))!=2){var up=new INPUT[1];up[0]=inputs[1];SendInput(1,up,Marshal.SizeOf(typeof(INPUT)));throw new Exception("导航按键未完整发送，已停止。");}
+    var down=new INPUT[]{inputs[0]};var up=new INPUT[]{inputs[1]};
+    if(SendInput(1,down,Marshal.SizeOf(typeof(INPUT)))!=1)throw new Exception("导航按键未发送，已停止。");
+    uint released=0;try{Thread.Sleep(90);}finally{released=SendInput(1,up,Marshal.SizeOf(typeof(INPUT)));}
+    if(released!=1)throw new Exception("导航按键未释放，已停止。");Guard(w);
   }
   public static bool ClearlyUnlocked(Bitmap b) {
-    int white=0,dark=0,gold=0,total=b.Width*b.Height;
-    for(int y=0;y<b.Height;y++)for(int x=0;x<b.Width;x++){var p=b.GetPixel(x,y);if(p.R>220&&p.G>220&&p.B>220)white++;if(p.R<80&&p.G<80&&p.B<80)dark++;if(p.R>145&&p.G>105&&p.B<120)gold++;}
-    return (double)white/total>0.3&&(double)dark/total>0.02&&(double)gold/total<0.1;
+    return LockState(b)==0;
   }
   public static int LockState(Bitmap b){
-    if(ClearlyUnlocked(b))return 0;
-    int white=0,gold=0,dark=0,total=b.Width*b.Height;
-    for(int y=0;y<b.Height;y++)for(int x=0;x<b.Width;x++){var p=b.GetPixel(x,y);if(p.R>220&&p.G>220&&p.B>220)white++;if(p.R>145&&p.G>105&&p.B<120)gold++;if(p.R<80&&p.G<80&&p.B<80)dark++;}
-    return gold>=total*.45&&white>=total*.05&&dark<=total*.03?1:-1;
+    if(b.Width<20||b.Height<20)return -1;
+    int white=0,dark=0,total=0;double cx=(b.Width-1)/2.0,cy=(b.Height-1)/2.0,r=Math.Min(b.Width,b.Height)*.34;
+    for(int y=0;y<b.Height;y++)for(int x=0;x<b.Width;x++){if((x-cx)*(x-cx)+(y-cy)*(y-cy)>r*r)continue;total++;var p=b.GetPixel(x,y);if(p.R>210&&p.G>210&&p.B>210)white++;if(p.R<90&&p.G<90&&p.B<90)dark++;}
+    double light=(double)white/total,black=(double)dark/total;
+    // Locked: filled pale disk with a dark padlock. Unlocked: pale glyph on the game banner.
+    if(light>.40&&black>.055)return 1;
+    if(light>.045&&light<.40&&black<.055)return 0;
+    return -1;
   }
   static double MedianEdge(Bitmap b,int y,int left,int right){
     var values=new double[right-left];for(int x=left;x<right;x++){var a=b.GetPixel(x,y);var c=b.GetPixel(x,y+1);values[x-left]=(Math.Abs(a.R-c.R)+Math.Abs(a.G-c.G)+Math.Abs(a.B-c.B))/3.0;}
@@ -121,9 +126,10 @@ public static class RelicNative {
   static void ClickAt(RelicWindow w,int x,int y) {
     Guard(w);if(x<0||y<0||x>=w.Width||y>=w.Height)throw new Exception("点击位置超出游戏窗口。");
     SetCursorPos(w.X+x,w.Y+y);Thread.Sleep(35);Guard(w);
-    var a=new INPUT[2];a[0].u.mouse.dwFlags=2;a[1].u.mouse.dwFlags=4;
-    uint sent=SendInput(2,a,Marshal.SizeOf(typeof(INPUT)));
-    if(sent!=2){var up=new INPUT[1];up[0].u.mouse.dwFlags=4;SendInput(1,up,Marshal.SizeOf(typeof(INPUT)));throw new Exception("鼠标点击未完整执行，已停止。");}
+    var down=new INPUT[1];down[0].u.mouse.dwFlags=2;var up=new INPUT[1];up[0].u.mouse.dwFlags=4;
+    if(SendInput(1,down,Marshal.SizeOf(typeof(INPUT)))!=1)throw new Exception("鼠标按下未执行，已停止。");
+    uint released=0;try{Thread.Sleep(90);}finally{released=SendInput(1,up,Marshal.SizeOf(typeof(INPUT)));}
+    if(released!=1)throw new Exception("鼠标释放未完整执行，已停止。");Guard(w);
   }
   public static void ClickGrid(RelicWindow w,int x,int y) { ClickAt(w,x,y); }
   public static void ClickDiscard(RelicWindow w,int x,int y) { ClickAt(w,x,y); }

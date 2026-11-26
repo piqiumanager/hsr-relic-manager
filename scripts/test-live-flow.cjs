@@ -8,8 +8,13 @@ const original=ctx.HSRCore.computeFutureScores;
 for(const [average,action]of [[79.99,'markDiscard'],[80,'keep'],[80.01,'keep']]){ctx.HSRCore.computeFutureScores=()=>({current:30,average,best:100,worst:0,rerollAvg:100});const a=await ctx.LiveFlow.score(req,E.DEFAULTS);assert.equal(a.action,action,'80 boundary '+average);assert.equal(a.averagePotential,average);n+=2;}
 ctx.HSRCore.computeFutureScores=()=>({current:1,average:1,best:100,worst:0,rerollAvg:100});
 const maxed=result.rows.find(r=>r.enhance===15&&!r.scoringIssues.length),maxRaw={...maxed.raw,mainstat_value:display(maxed.main.stat,maxed.main.value),substats:maxed.substats.map(s=>({key:s.stat,value:display(s.stat,s.value)})),lock:false,location:'',discard:false};
-const skipped=await ctx.LiveFlow.score({...req,observation:maxRaw},E.DEFAULTS);assert.equal(skipped.action,'skip');assert.match(skipped.reason,/15.*跳过/);n+=2;
+const skipped=await ctx.LiveFlow.score({...req,observation:maxRaw},E.DEFAULTS);assert.equal(skipped.action,'markDiscard');assert.equal(skipped.currentScore,1);n+=2;
+const equipped=await ctx.LiveFlow.score({...req,observation:{...maxRaw,location:'equipped',lock:true}},E.DEFAULTS);assert.equal(equipped.action,'skip');assert.equal(equipped.equippedLow,true);assert.equal(equipped.unlockFirst,false);n+=3;
+for(const [current,action]of [[79.99,'markDiscard'],[80,'keep'],[80.01,'keep']]){ctx.HSRCore.computeFutureScores=()=>({current,average:1,best:100,worst:0,rerollAvg:100});const a=await ctx.LiveFlow.score({...req,observation:maxRaw},E.DEFAULTS);assert.equal(a.action,action,'+15 current boundary '+current);n++;}
+ctx.HSRCore.computeFutureScores=()=>({current:1,average:1,best:100,worst:0,rerollAvg:100});
 const unlock=await ctx.LiveFlow.score({...req,observation:{...raw,lock:true}},E.DEFAULTS);assert.equal(unlock.action,'markDiscard');assert.equal(unlock.unlockFirst,true);n+=2;
 for(const patch of [{lock:null},{location:'equipped'},{discard:true}]){assert.equal((await ctx.LiveFlow.score({...req,observation:{...raw,...patch}},E.DEFAULTS)).action,'skip');n++;}
+for(const [level,target]of [[3,6],[7,9],[12,15]]){ctx.HSRCore.computeFutureScores=()=>({current:90,average:90,best:100,worst:0,rerollAvg:100});const main=ctx.HSRCore.MainStatsValues[raw.mainstat][5];const a=await ctx.LiveFlow.score({...req,upgrade:true,observation:{...raw,level,mainstat_value:display(raw.mainstat,main.base+main.increment*level)}},E.DEFAULTS);assert.equal(a.action,'enhance');assert.equal(a.targetLevel,target);n+=2;}
+const noUnlock=await ctx.LiveFlow.score({...req,upgrade:true,observation:{...raw,lock:true}},E.DEFAULTS);assert.equal(noUnlock.action,'keep');n++;
 ctx.HSRCore.computeFutureScores=original;
-console.log('Live scoring passed: '+n+' checks, fixed average-80 boundary, no theoretical-ceiling veto, +15 skip, old-setting migration and protections.');})().catch(e=>{console.error(e);process.exit(1)});
+console.log('Live scoring passed: '+n+' checks, fixed average-80 boundary, no theoretical-ceiling veto, +15 current score, equipped warning, old-setting migration and protections.');})().catch(e=>{console.error(e);process.exit(1)});

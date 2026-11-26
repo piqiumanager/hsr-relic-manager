@@ -19,7 +19,7 @@ function Find-UpgradeControl($Lines,[string[]]$Texts,$Region,$Exclude=$null){
     if($found.Count-eq 1){return $found[0]};return $null
 }
 function Get-UpgradeProjection($Lines,[int]$Current,[int]$Target){
-    if($Target-ne[Math]::Min(15,$Current+3)-or$Current-ge 15){throw '强化目标不是下一档 +3。'}
+    if($Target-ne[Math]::Min(15,([Math]::Floor($Current/3)+1)*3)-or$Current-ge 15){throw '强化目标不是下一档 +3。'}
     $text=Normalize-MarkerText (($Lines|ForEach-Object{$_.text})-join' ')
     $levels=@([regex]::Matches($text,'(?<![0-9])\+([0-9]{1,2})(?![0-9.])')|ForEach-Object{[int]$_.Groups[1].Value})
     if($levels-contains$Current-and$levels-contains$Target-and@($levels|Where-Object{$_-gt$Target-and$_-le 15}).Count-eq 0){return $true}
@@ -49,7 +49,7 @@ function Assert-UpgradeDecision($Request,$Decision){
     $low=[double]$Decision.lower;$high=[double]$Decision.upper
     if([double]::IsNaN($low)-or[double]::IsInfinity($low)-or[double]::IsNaN($high)-or[double]::IsInfinity($high)-or$high-lt$low){throw '强化评分区间无效。'}
     switch($Decision.action){
-      'enhance'{if($level-ge 15-or$Decision.targetLevel-ne[Math]::Min(15,$level+3)-or(-not($Request.initial-and$level-eq 0)-and$low-lt 80)){throw '强化评分或目标等级不满足规则。'}}
+      'enhance'{if($level-ge 15-or$Decision.targetLevel-ne[Math]::Min(15,$level+3)-or$low-lt 80){throw '强化评分或目标等级不满足规则。'}}
       'markDiscard'{if($high-ge 80){throw '不能弃置可能达到 80 分的遗器。'}}
       'keep'{if($level-ne 15-or$low-lt 80){throw '满级保留条件不满足。'}}
       default{throw '未知强化决策。'}

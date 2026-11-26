@@ -10,7 +10,7 @@ globalThis.RelicEngine = (() => {
     custom:{label:'自定义',current:75,average:70,best:85},
   };
   const DEFAULTS={preset:'extreme',current:75,average:70,best:85,scope:'all',selected:[],protectLocked:true,protectEquipped:true,considerReroll:false,keepSpeed:0,keepRare:false,reserve:0,overrides:{}};
-  function cleanupSettings(saved={}){return settingsValid({...saved,preset:'unfinished80',current:0,average:80,best:0,cleanupOnlyUnfinished:true,allowUnlockLowPotential:true,protectLocked:false,protectEquipped:true,considerReroll:false,keepSpeed:0,keepRare:false,reserve:0});}
+  function cleanupSettings(saved={}){return settingsValid({...saved,preset:'allLevels80',current:80,average:80,best:0,cleanupOnlyUnfinished:false,allowUnlockLowPotential:true,protectLocked:false,protectEquipped:true,considerReroll:false,keepSpeed:0,keepRare:false,reserve:0});}
   const aliases={'HP_':'HP%','ATK_':'ATK%','DEF_':'DEF%','CRIT Rate_':'CRIT Rate','CRIT DMG_':'CRIT DMG','Effect Hit Rate_':'Effect Hit Rate','Effect RES_':'Effect RES','Break Effect_':'Break Effect','Physical DMG Boost_':'Physical DMG Boost','Fire DMG Boost_':'Fire DMG Boost','Ice DMG Boost_':'Ice DMG Boost','Lightning DMG Boost_':'Lightning DMG Boost','Wind DMG Boost_':'Wind DMG Boost','Quantum DMG Boost_':'Quantum DMG Boost','Imaginary DMG Boost_':'Imaginary DMG Boost','Energy Regeneration Rate_':'Energy Regeneration Rate','Outgoing Healing Boost_':'Outgoing Healing Boost'};
   for(const [k,v]of Object.entries(STAT_ZH))aliases[v]=k;
   const stat=s=>aliases[String(s)]||String(s??'');

@@ -23,16 +23,16 @@ $JobDirectory=Join-Path $root ('work/live-executor-'+[Guid]::NewGuid().ToString(
 $template=@{set_id='117';slot='Head';mainstat='HP';pieceName='synthetic';level=12;mainstat_value=587;substats=@(@{key='ATK';value=55},@{key='SPD';value=6},@{key='CRIT DMG';value=5.1},@{key='DEF';value=16});preview_substats=@();numericFingerprint='numbers';lock=$false;discard=$false;location=''}
 $script:checks=0
 function Assert($condition,$label){if(-not$condition){throw $label};$script:checks++}
-function Reset-Case([string]$Name){$script:case=$Name;$script:reads=0;$script:state=@{scanned=1;marked=0;unlocked=0};[RelicNative]::Clicks=0;[RelicNative]::Unlocks=0;[RelicNative]::Locked=$false;[RelicNative]::Marked=$false;[RelicNative]::AcceptClick=$true;[RelicNative]::AcceptUnlock=$true;$script:plan.allowUnlockLowPotential=$true}
+function Reset-Case([string]$Name){$script:case=$Name;$script:selectedTemplate=$template;$script:reads=0;$script:state=@{scanned=1;marked=0;unlocked=0};[RelicNative]::Clicks=0;[RelicNative]::Unlocks=0;[RelicNative]::Locked=$false;[RelicNative]::Marked=$false;[RelicNative]::AcceptClick=$true;[RelicNative]::AcceptUnlock=$true;$script:plan.allowUnlockLowPotential=$true}
 function Check-Stop {if($script:case-eq'cancel'-or($script:case-eq'cancel-during-score'-and$script:reads-gt 0)-or($script:case-eq'cancel-after-unlock'-and[RelicNative]::Unlocks-gt 0)){throw(New-Object OperationCanceledException)}}
 function Check-Inventory {return $script:case-ne'left-inventory'}
 function Read-Selected($b,$index){
- $script:reads++;$r=ConvertFrom-Json (ConvertTo-Json $template -Depth 10);$r.discard=[RelicNative]::Marked;$r.lock=[RelicNative]::Locked;$r.numericFingerprint='different pixels'
+ $script:reads++;$r=ConvertFrom-Json (ConvertTo-Json $selectedTemplate -Depth 10);$r.discard=[RelicNative]::Marked;$r.lock=[RelicNative]::Locked;$r.numericFingerprint='different pixels'
  switch($script:case){'locked'{$r.lock=$true};'equipped'{$r.location='equipped'};'changed-before'{$r.substats[0].value=76};'changed-after'{if($script:reads-eq 2){$r.mainstat_value=112}};'changed-after-unlock'{if($script:reads-eq 2){$r.mainstat_value=112}}};return $r
 }
-function Ask-LiveScore($raw,$intent){return @{action=$(if($raw.discard){'skip'}else{'markDiscard'});verified=$true;averagePotential=79.9;unlockFirst=$raw.lock;observation=$raw;raw=$raw}}
+function Ask-LiveScore($raw,$intent){return @{action=$(if($raw.discard){'skip'}else{'markDiscard'});verified=$true;averagePotential=79.9;currentScore=79.9;unlockFirst=$raw.lock;observation=$raw;raw=$raw}}
 Reset-Case 'success';Mark-LiveRelic $template $template;Assert ($state.marked-eq 1-and[RelicNative]::Clicks-eq 1) 'Exactly one confirmed mark'
-Reset-Case 'full-level';$maxed=$template.Clone();$maxed.level=15;$bad=$false;try{Mark-LiveRelic $maxed $maxed}catch{$bad=$true};Assert ($bad-and[RelicNative]::Clicks-eq 0) 'Real marking function rejects +15 before any click'
+Reset-Case 'full-level';$maxed=$template.Clone();$maxed.level=15;$maxed.mainstat_value=705;$script:selectedTemplate=$maxed;Mark-LiveRelic $maxed $maxed;Assert ($state.marked-eq 1-and[RelicNative]::Clicks-eq 1) 'Real marking function marks an unequipped low +15 exactly once'
 $lockedTarget=$template.Clone();$lockedTarget.lock=$true
 Reset-Case 'unlock-success';[RelicNative]::Locked=$true;$record=$lockedTarget.Clone();Mark-LiveRelic $lockedTarget $lockedTarget $record;Assert ([RelicNative]::Unlocks-eq 1-and[RelicNative]::Clicks-eq 1-and$state.unlocked-eq 1-and$state.marked-eq 1-and$record.lock-eq$false) 'Confirmed unlock followed by exactly one discard; snapshot lock is updated'
 foreach($name in @('unlock-no-change','changed-after-unlock','unauthorized-unlock','cancel-after-unlock')){Reset-Case $name;[RelicNative]::Locked=$true;if($name-eq'unlock-no-change'){[RelicNative]::AcceptUnlock=$false};if($name-eq'unauthorized-unlock'){$plan.allowUnlockLowPotential=$false};$bad=$false;try{Mark-LiveRelic $lockedTarget $lockedTarget}catch{$bad=$true};Assert ($bad-and[RelicNative]::Clicks-eq 0-and$state.marked-eq 0-and[RelicNative]::Unlocks-eq$(if($name-eq'unauthorized-unlock'){0}else{1})) ('Unlock failure never discards or retries: '+$name)}

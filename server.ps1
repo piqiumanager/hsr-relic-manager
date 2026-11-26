@@ -81,7 +81,7 @@ function Get-MarkerStatus {
     $ready=$true # Fixed 1920x1080 layout replaces manual calibration.
     if(-not $script:markerJob){return @{state='idle';calibrated=$ready;message='尚未启动游戏内标记。'}}
     $file=Join-Path $script:markerJob.directory 'status.json'
-    if(Test-Path -LiteralPath $file){try{$state=ConvertFrom-Json ([IO.File]::ReadAllText($file,$utf8));if($state.state -in @('starting','calibrating','running','awaitingScore')){try{if($script:markerJob.process.HasExited){$state.state='failed';$state.message='标记进程意外结束，请检查 marker-runs 记录后重试。'}}catch{}};if($script:markerJob.kind -eq 'upgrade' -and ([int]$state.confirmedSteps -gt 0 -or [int]$state.marked -gt 0) -and $script:capture){$script:capture.invalidated=$true};$state|Add-Member -NotePropertyName calibrated -NotePropertyValue $ready -Force;return $state}catch{}}
+    if(Test-Path -LiteralPath $file){try{$state=ConvertFrom-Json ([IO.File]::ReadAllText($file,$utf8));if($state.state -in @('starting','calibrating','running','awaitingScore')){try{if($script:markerJob.process.HasExited){$state.state='failed';$detail='';$log=Join-Path $script:markerJob.directory 'failure.log';if(Test-Path -LiteralPath $log){$detail=([IO.File]::ReadAllText($log,$utf8)-split"`r?`n")[0]};$state.message=if($detail){'执行中断：'+$detail}else{'执行进程已退出，已确认标记 '+[int]$state.marked+' 件。请查看本次记录。'};$state.PSObject.Properties.Remove('request')}}catch{}};if($script:markerJob.kind -eq 'upgrade' -and ([int]$state.confirmedSteps -gt 0 -or [int]$state.marked -gt 0) -and $script:capture){$script:capture.invalidated=$true};$state|Add-Member -NotePropertyName calibrated -NotePropertyValue $ready -Force;return $state}catch{}}
     if(((Get-Date)-$script:markerJob.started).TotalSeconds -gt 25){
         try{if($script:markerJob.process.HasExited){return @{state='failed';calibrated=$ready;message='标记进程启动失败，请查看 marker-runs 中的记录或重试。'}}}catch{}
     }
@@ -320,7 +320,7 @@ try {
                     if($script:markerJob){[IO.File]::WriteAllText((Join-Path $script:markerJob.directory 'stop'),'stop',$utf8)}
                     Send-Response $stream 200 (Json @{state='stopping';message='已请求停止，脚本会在下一次输入前停下。'})
                 } elseif ($route -eq '/api/health' -and $method -eq 'GET') {
-                    Send-Response $stream 200 (Json @{state='ok';version='1.5.2';capture='Reliquary v0.20.0';scoring='Fribbels';marker='Chinese Windows OCR'})
+                    Send-Response $stream 200 (Json @{state='ok';version='1.5.3';capture='Reliquary v0.20.0';scoring='Fribbels';marker='Chinese Windows OCR'})
                 } elseif ($route -eq '/api/exit' -and $method -eq 'POST') {
                     Send-Response $stream 200 (Json @{state='closing'})
                     if($script:markerJob){[IO.File]::WriteAllText((Join-Path $script:markerJob.directory 'stop'),'stop',$utf8)}

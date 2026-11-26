@@ -5,6 +5,7 @@ $bad=$false;try{Get-RelicLayout1080 2560 1440}catch{$bad=$true};if(-not$bad){thr
 $keys=@(0..17|ForEach-Object{Get-RelicNavigationKey $_});if(($keys-join'')-ne'DDDDDDDDSAAAAAAAAS'){throw 'Snake traversal incorrect'}
 Add-Type -AssemblyName System.Drawing;Add-Type -AssemblyName System.Windows.Forms
 Add-Type -Path (Join-Path $root 'marker-native.cs') -ReferencedAssemblies System.Drawing,System.Windows.Forms
-$b=New-Object Drawing.Bitmap(38,38);$g=[Drawing.Graphics]::FromImage($b);$g.Clear([Drawing.Color]::White);$g.FillRectangle([Drawing.Brushes]::Black,12,12,14,14);$g.Dispose();if(-not[RelicNative]::ClearlyUnlocked($b)){throw 'Unlocked control not recognized'};$b.Dispose()
-$b=New-Object Drawing.Bitmap(38,38);$g=[Drawing.Graphics]::FromImage($b);$g.Clear([Drawing.Color]::Goldenrod);$g.FillRectangle([Drawing.Brushes]::White,12,12,14,14);$g.Dispose();if([RelicNative]::ClearlyUnlocked($b)){throw 'Locked control accepted'};$b.Dispose()
+$b=New-Object Drawing.Bitmap(38,38);$g=[Drawing.Graphics]::FromImage($b);$g.Clear([Drawing.Color]::FromArgb(170,140,100));$g.FillRectangle([Drawing.Brushes]::White,14,13,10,13);$g.Dispose();if([RelicNative]::LockState($b)-ne 0){throw 'Pale glyph on banner must mean unlocked'};$b.Dispose()
+$b=New-Object Drawing.Bitmap(38,38);$g=[Drawing.Graphics]::FromImage($b);$g.Clear([Drawing.Color]::Goldenrod);$g.FillEllipse([Drawing.Brushes]::White,3,3,32,32);$g.FillRectangle([Drawing.Brushes]::Black,14,13,10,13);$g.Dispose();if([RelicNative]::LockState($b)-ne 1){throw 'Dark glyph on pale disk must mean locked'};$b.Dispose()
+$b=New-Object Drawing.Bitmap(38,38);$g=[Drawing.Graphics]::FromImage($b);$g.Clear([Drawing.Color]::Goldenrod);$g.Dispose();if([RelicNative]::LockState($b)-ne -1){throw 'Missing glyph must remain unknown'};$b.Dispose()
 Write-Output 'Fixed layout, keyboard sequence and native icon recognition passed; no game input sent.'

@@ -27,6 +27,7 @@ $g=[Drawing.Graphics]::FromImage($b);$g.FillRectangle([Drawing.Brushes]::Black,5
 # Load executor function bodies, not its startup block. All game actions below use test doubles.
 $t=$null;$e=$null;$ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path $root 'upgrade.ps1'),[ref]$t,[ref]$e);Assert ($e.Count-eq 0) 'Executor syntax'
 foreach($f in $ast.FindAll({param($n)$n-is[Management.Automation.Language.FunctionDefinitionAst]},$true)){Invoke-Expression $f.Extent.Text}
+. (Join-Path $root 'enhancement-actions.ps1')
 $realConfirm=${function:Confirm-Enhancement};$realPrepare=${function:Prepare-Enhancement}
 $script:clicks=@();$script:projection='+0 → +15';$script:material='4星及以下';$levelRow=@{};$materialHeader=@{}
 function Assert-EnhancementScreen {}
@@ -45,7 +46,7 @@ function Save-State($Name,$Message){}
 function Read-Observation($c,$l){return @{enhance=$script:level;substats=@(@{stat='SPD';value=2.6})}}
 function Ask-Score($c,$id,$o,$initial){if($o.enhance-eq 15){return @{action='keep';lower=90;upper=90}};return @{action='enhance';targetLevel=$o.enhance+3;lower=90;upper=90}}
 function Prepare-Enhancement($c,$o,$target,$active){$script:targets+=,$target}
-function Confirm-Enhancement($o,$target){$script:level=$target;$script:state.confirmedSteps++}
+function Confirm-Enhancement($o,$target){$script:level=$target;$script:state.submittedSteps++}
 function Mark-CurrentDiscard($c,$o){$script:marks++}
 $candidate.enhance=0;$candidate.substats=@(@{stat='SPD';value=2.6})
 $outcome=Process-Relic $candidate 'test';Assert ($outcome-eq'keep') 'Executor completes actual orchestration'

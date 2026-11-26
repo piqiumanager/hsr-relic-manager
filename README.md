@@ -2,7 +2,7 @@
 
 Windows 简体中文客户端的遗器整理工具。按已收录五星角色的 Fribbels 权重评分，自动标记低分遗器，分解由玩家确认。
 
-**[下载 v1.5.2 测试版：EXE＋中文说明](https://github.com/piqiumanager/hsr-relic-manager/releases/download/v1.5.2/hsr-relic-manager-v1.5.2-windows.zip)** · [发布页](https://github.com/piqiumanager/hsr-relic-manager/releases/tag/v1.5.2)
+**[下载 v1.5.3 测试版：EXE＋中文说明](https://github.com/piqiumanager/hsr-relic-manager/releases/download/v1.5.3/hsr-relic-manager-v1.5.3-windows.zip)** · [发布页](https://github.com/piqiumanager/hsr-relic-manager/releases/tag/v1.5.3)
 
 ZIP 内只有一个 EXE 和说明，模型与背景已内置，无需 Python、Node 或另下素材。
 
@@ -24,8 +24,8 @@ ZIP 内只有一个 EXE 和说明，模型与背景已内置，无需 Python、N
 
 - **未满级平均满级潜力 <80：标记弃置。已锁定的先解锁，再核验并标记。**
 - 平均潜力 ≥80：保留，不再要求同时满足理论上限。
-- **+15：跳过。**
-- 已装备、锁定状态不明或不能可靠评分的遗器跳过，并显示原因。
+- **+15 当前分 <80：标记弃置；达到 80 保留。**
+- 已装备的低分遗器保留并单独提醒。锁定状态不明或不能可靠评分的跳过，并显示原因。
 
 按目标五星中最高的平均满级潜力判断。画面隐藏小数使用可能值区间核验。旧版 70/85 设置会切换到本版规则。
 
@@ -37,15 +37,25 @@ ZIP 内只有一个 EXE 和说明，模型与背景已内置，无需 Python、N
 
 ## 角色背景
 
-内置 **59 张女性角色官网立绘**，本版再补充 26 张，包含镜流、符玄、阮·梅、黑天鹅、花火、银狼、布洛妮娅等。每次启动随机更换，不连续重复；也可在“角色背景”中搜索和选择。
+内置 **59 张女性角色官网立绘**，包含镜流、符玄、阮·梅、黑天鹅、花火、银狼、布洛妮娅等。每次启动随机更换，不连续重复；也可在“角色背景”中搜索和选择。
 
 右侧清晰立绘与左侧操作分开，默认不透明度 **82%**。点击人物旁的“换一张”切换，在“角色背景”中调节清晰度，选择会保存。图片全部从本机读取。完整名单和官网地址见 [credits.json](source/backgrounds/credits.json)。
 
-## 强化与测试范围
+## 逐件强化
 
-强化沿用逐次 +3：未满级平均潜力 ≥80 继续，满级当前分 ≥80 保留，低分仅标弃置。允许经验材料与未锁定、未装备的四星及以下遗器，禁止消耗五星。强化前需取得本次完整读取快照。
+点击“胚子强化”后直接点击“开始强化”，无需先读完整背包或重新登录。
 
-本版通过 80 分边界、+15 跳过、解锁后核验及标记、异常中止、界面和离线识别测试。实际游戏解锁、弃置和强化完整流程尚未完成端到端验证，继续作为测试版；详情见 [验证记录](docs/VALIDATION.md)。
+逐件识别和评分，低于 80 先标记弃置。未满级平均满级潜力达到 80 的未锁定、未装备遗器，每次强化至下一档（+3、+6、+9、+12、+15）。每档都读回新属性并重新评分；掉到低分立即标记弃置，达到高分 +15 则保留。原本在 +7 等非整档等级的，先补到下一档，再逐档处理。
+
+已锁定的低分件会解锁并弃置；已锁定的高分件保持锁定，不自动强化。已装备的低分件单独提醒。识别异常时停止或跳过，不会把未确认的点击计入成功。
+
+允许经验材料和未锁定、未装备的四星及以下遗器，禁止使用五星材料。强化前核验材料规则及目标等级，强化后核验身份、等级和词条。材料不足或无法核验时停止。工具只标记弃置，分解由玩家确认。
+
+## 修复与验证
+
+v1.5.3 修复锁定按钮状态识别反向、快照保存崩溃以及出错后状态停留在等待评分的问题。清理与强化共用现场识别、评分和已确认弃置流程；强化后背包重排会重新遍历并更新数量。
+
+20 组离线回归及 2 组浏览器界面测试通过，包含真实评分代码、文件通信、执行函数、完整模拟背包遍历和逐档强化。**本版尚未完成真实游戏中的解锁、弃置和材料消耗验证，仍为待游戏复测的测试版，不能视为无 BUG 保证。** 详情见 [验证记录](docs/VALIDATION.md)。
 
 ## 数据与开发
 
@@ -54,12 +64,9 @@ ZIP 内只有一个 EXE 和说明，模型与背景已内置，无需 Python、N
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-ocr.ps1
 node source/repack.mjs
-node scripts/test-engine.cjs
-node scripts/test-live-flow.cjs
-node scripts/test-background.cjs
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-live-core.ps1
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-live-executor.ps1
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-live-bridge.ps1
+node scripts/run-offline-tests.cjs
+# 本机安装简体中文 OCR 时可运行额外识别回归：
+node scripts/run-offline-tests.cjs --ocr
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File desktop/build.ps1
 ```
 

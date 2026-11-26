@@ -17,7 +17,7 @@ Download-Verified 'https://github.com/IceDynamix/reliquary-archiver/releases/dow
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $sdk=Join-Path $BuildRoot 'sdk';[IO.Compression.ZipFile]::ExtractToDirectory((Join-Path $DependencyRoot 'webview2.nupkg'),$sdk)
 $payload=Join-Path $BuildRoot 'payload';[IO.Directory]::CreateDirectory($payload)|Out-Null
-foreach($file in @('server.ps1','marker.ps1','marker-core.ps1','marker-native.cs','layout-1080.ps1','upgrade-core.ps1','upgrade.ps1','live-core.ps1','live-server.ps1','live.ps1','星铁遗器整理助手.html','source','licenses','desktop','scripts','README.md','LICENSE','package.json','启动工具.cmd','使用说明.txt')){Copy-Item -LiteralPath (Join-Path $SourceRoot $file) -Destination $payload -Recurse -Force}
+foreach($file in @('server.ps1','marker.ps1','marker-core.ps1','marker-native.cs','layout-1080.ps1','upgrade-core.ps1','upgrade.ps1','live-core.ps1','live-server.ps1','live.ps1','enhancement-actions.ps1','星铁遗器整理助手.html','source','licenses','desktop','scripts','README.md','LICENSE','package.json','启动工具.cmd','使用说明.txt')){Copy-Item -LiteralPath (Join-Path $SourceRoot $file) -Destination $payload -Recurse -Force}
 $payloadDesktop=Join-Path $payload 'source\desktop';[IO.Directory]::CreateDirectory($payloadDesktop)|Out-Null
 foreach($file in @('Launcher.cs','DesktopHost.cs','app.manifest','build.ps1','使用说明.txt')){Copy-Item -LiteralPath (Join-Path $PSScriptRoot $file) -Destination $payloadDesktop -Force}
 Copy-Item -LiteralPath (Join-Path $sdk 'lib\net462\Microsoft.Web.WebView2.Core.dll') -Destination $payload
@@ -44,10 +44,10 @@ if($LASTEXITCODE -ne 0){throw 'Launcher compilation failed.'}
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot '使用说明.txt') -Destination $OutputRoot -Force
 $package=Join-Path $BuildRoot 'download';[IO.Directory]::CreateDirectory($package)|Out-Null
 Copy-Item -LiteralPath $exe -Destination $package;Copy-Item -LiteralPath (Join-Path $OutputRoot '使用说明.txt') -Destination $package
-$zip=Join-Path $OutputRoot 'hsr-relic-manager-v1.5.2-windows.zip'
+$zip=Join-Path $OutputRoot 'hsr-relic-manager-v1.5.3-windows.zip'
 if(Test-Path -LiteralPath $zip){Remove-Item -LiteralPath $zip -Force}
 [IO.Compression.ZipFile]::CreateFromDirectory($package,$zip,[IO.Compression.CompressionLevel]::Optimal,$false)
-$direct=Join-Path $OutputRoot 'hsr-relic-manager-v1.5.2.exe';Copy-Item -LiteralPath $exe -Destination $direct -Force
+$direct=Join-Path $OutputRoot 'hsr-relic-manager-v1.5.3.exe';Copy-Item -LiteralPath $exe -Destination $direct -Force
 $checks=@();foreach($file in @($exe,$direct,$zip)){ $checks+=((Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()+'  '+[IO.Path]::GetFileName($file)) }
 [IO.File]::WriteAllLines((Join-Path $OutputRoot 'SHA256SUMS.txt'),$checks,(New-Object Text.UTF8Encoding($false)))
 Write-Output ('EXE='+$exe);Write-Output ('ZIP='+$zip);Get-Item -LiteralPath $exe,$zip | Select-Object Name,Length

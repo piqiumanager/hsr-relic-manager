@@ -1,11 +1,11 @@
 {
   "name": "hsr-relic-manager",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "private": true,
   "license": "AGPL-3.0",
   "scripts": {
     "build": "node source/repack.mjs",
-    "test": "node scripts/test-engine.cjs && node scripts/test-mark-plan.cjs"
+    "test": "node scripts/run-offline-tests.cjs"
   },
   "engines": {
     "node": ">=18"

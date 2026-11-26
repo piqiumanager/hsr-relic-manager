@@ -97,7 +97,7 @@ function Initialize-MarkerOcr {
     [Windows.Storage.Streams.IRandomAccessStream,Windows.Storage.Streams,ContentType=WindowsRuntime] | Out-Null
     [Windows.Graphics.Imaging.BitmapDecoder,Windows.Foundation,ContentType=WindowsRuntime] | Out-Null
     [Windows.Graphics.Imaging.SoftwareBitmap,Windows.Foundation,ContentType=WindowsRuntime] | Out-Null
-    $language=@([Windows.Media.Ocr.OcrEngine]::AvailableRecognizerLanguages | Where-Object {$_.LanguageTag -like 'zh*'}) | Select-Object -First 1
+    $language=@([Windows.Media.Ocr.OcrEngine]::AvailableRecognizerLanguages | Where-Object {$_.LanguageTag -match '^(zh-Hans(?:-|$)|zh-CN$|zh-SG$)'}) | Select-Object -First 1
     if(-not $language){throw '本机没有中文 OCR 语言包。请在 Windows 语言设置安装简体中文的文字识别组件后重试。'}
     $script:MarkerOcr=[Windows.Media.Ocr.OcrEngine]::TryCreateFromLanguage($language)
     $script:MarkerAsTask=[System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object {$_.Name -eq 'AsTask' -and $_.IsGenericMethod -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation`1'} | Select-Object -First 1
